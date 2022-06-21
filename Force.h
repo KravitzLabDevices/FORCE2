@@ -76,18 +76,21 @@ class Force {
 
     // --- Load Cells --- //
     HX711 scaleLeft;
+    float calibration_factor_Left = -3300;    
+    float scaleChangeLeft = 0;    // Load cell 1
+    float lastReadingLeft = 0;    // Load cell 1        
+    float gramsLeft;    
+    float outputValueLeft;        // Load cell 1
+        
     HX711 scaleRight;
-    float calibration_factor = -3300;
-    float calibration_factor2 = -3300;
-    float scaleChange = 0;    // Load cell 1
-    float lastReading = 0;    // Load cell 1
-    float outputValue;        // Load cell 1
-    float gramsLeft;
-    float scaleChange2 = 0;   // Load cell 2
-    float lastReading2 = 0;   // Load cell 2
-    float outputValue2;       // Load cell 2
+    float calibration_factor_Right = -3300;    
+    float scaleChangeRight = 0;   // Load cell 2
+    float lastReadingRight = 0;   // Load cell 2
+    float outputValueRight;       // Load cell 2
     float gramsRight;
-    void Sense();
+    
+    void SenseLeft();
+    void SenseRight();
     void Tare();
     void Calibrate();
     bool calibrate_active = false;
@@ -107,17 +110,21 @@ class Force {
     unsigned long unixtime = 0;
 
 
-    // --- Solenoid functions --- //
+    // --- Pump functions --- //
     float dispense_time = 0;
     int dispense_amount = 2000;
-    void Dispense();
+    void DispenseLeft();
+    void DispenseRight()
 
     // --- Lever functions --- //
-    unsigned long pressTimeRight = 0;
-    unsigned long pressTimeLeft = 0;
-    unsigned long pressLengthLeft = 0;
-    unsigned long pressLengthRight = 0;
     int dispense_delay = 4;
+    
+    unsigned long pressLengthLeft = 0;
+    unsigned long pressTimeLeft = 0;
+    
+    unsigned long pressLengthRight = 0;
+    unsigned long pressTimeRight = 0;  
+      
 
     // --- Trial functions--- //
     int FRC = 1;          // This is the unique # of the device
