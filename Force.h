@@ -81,6 +81,7 @@ class Force {
     float lastReadingLeft = 0;    // Load cell 1        
     float gramsLeft;    
     float outputValueLeft;        // Load cell 1
+    bool LeftActive;
         
     HX711 scaleRight;
     float calibration_factor_Right = -3300;    
@@ -88,6 +89,7 @@ class Force {
     float lastReadingRight = 0;   // Load cell 2
     float outputValueRight;       // Load cell 2
     float gramsRight;
+    bool RightActive; 
     
     void SenseLeft();
     void SenseRight();
@@ -136,12 +138,18 @@ class Force {
     bool lick = false;
     int start_timer = 0;
     int trial = 0;
-    int presses = 0;
-    int reqLeft = 2;
+    
+    int pressesLeft = 0;
+    int reqLeft = 2;    
+    int ratioLeft = 1;
+    int hold_timeLeft = 350;
+            
+    int pressesRight = 0;
     int reqRight = 2;
-    unsigned long pressStart = 0;
-    int ratio = 1;
-    int hold_time = 350;
+    int ratioRight = 1;
+     int hold_timeRight = 350;
+            
+    unsigned long pressStart = 0;    
     int trials_per_block = 10;
     int max_force = 20; 
     unsigned long start_time = 0;
@@ -152,6 +160,7 @@ class Force {
     bool dispensing = false;
     
     int trial_window = 10000; // Time window between possible start of the trial and lever press
+    bool trial_available = false;
 
     // --- Serial out--- //
     void SerialOutput();

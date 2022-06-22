@@ -1,34 +1,15 @@
 
 
-
-void Force::start_deterministic() {
-  start_timer = 0;
-  trial_available = true;
-  Tare();
-  
-  if (millis() - start_timer > trial_window) {
-    trial_available = false
-    }
-  
-  if (trial_available & (pressLength > hold_time)) {
-    presses ++;
-    if (presses == ratio) {
-      Tone(500, 200);
-      DispenseLeft();
-      Timeout();
-      presses = 0
-      }
-    else {
-      Tone(1000,200);
-      
-      }
-    
-    }
-    
-  
-  if (trial_available & pressLength > hold_time)
-   
-  }
+/////////////////////////////////////////////////////////////////////////
+//     
+/////////////////////////////////////////////////////////////////////////
+void Force::run() {
+  UpdateDisplay();
+  WriteToSD();
+  DateTime now = rtc.now();
+  unixtime  = now.unixtime();
+  //SerialOutput();
+}
   
 
 ///////////////////////////
@@ -48,7 +29,7 @@ void Force::DispenseLeft() {
     tft.print((-(millis() - successTime - (dispense_delay*1000))/ 1000),1);
     run();
     tft.fillRect(84, 43, 80, 12, ST7735_BLACK); // remove Delay text when timeout is over
-    if (grams > 1 or grams2 >1){ //only clear F1 and F2 values if levers are being pushed
+    if (gramsLeft > 1 or gramsRight >1){ //only clear F1 and F2 values if levers are being pushed
       tft.fillRect(12, 0, 38, 24, ST7735_BLACK); // clear the text after label
     }
   }
@@ -64,7 +45,7 @@ void Force::DispenseLeft() {
   //digitalWrite(A2, LOW);
   //digitalWrite(13, LOW);
   pressTime = millis();
-  pressLength = 0;
+  pressLengthLeft = 0;
   dispensing = false;
 }
 
@@ -101,7 +82,7 @@ void Force::DispenseRight() {
   //digitalWrite(A2, LOW);
   //digitalWrite(13, LOW);
   pressTime = millis();
-  pressLength = 0;
+  pressLengthRight = 0;
   dispensing = false;
 }
 
@@ -120,27 +101,22 @@ void Force::SenseLeft() {
     pressLengthLeft = 0;
   }
   
-  if (grams > reqLeft) {
-    pressLengthLeft = (millis() - pressTime);
+  if (gramsLeft > reqLeft) {
+    pressLengthLeft = (millis() - pressTimeLeft);
   }
   
     
-  outputValue = map(gramsLeft, 0, 200, 0, 4095);
+  outputValueLeft = map(gramsLeft, 0, 200, 0, 4095);
   //outputValue2 = map(grams2, 0, 200, 0, 4095);
  
-  if (outputValue > 4000) outputValue = 4000;
-  if (outputValue < 1) outputValue = 0;
-  //if (outputValue2 > 4000) outputValue2 = 4000;
-  //if (outputValue2 < 1) outputValue2 = 0;
+  if (outputValueLeft > 4000) outputValue = 4000;
+  if (outputValueLeft < 1) outputValueLeft = 0;
 
   //analogWrite(A0, outputValue2);
   //analogWrite(A1, outputValue);
   
-  scaleChange += abs(outputValue - lastReading);
-  //scaleChange2 += abs(outputValue2 - lastReading2);
-
-  lastReading = outputValue;
-  //lastReading2 = outputValue2;
+  scaleChangeLeft += abs(outputValueLeft - lastReadingLeft);
+  lastReadingLeft = outputValueLeft;
   
   //control pixel color based on load cells 
   //pixels.setPixelColor(0, pixels.Color(0, outputValue / 100, outputValue2 / 100)); 
@@ -171,26 +147,21 @@ void Force::SenseRight() {
   }
   
     
-  outputValue = map(grams, 0, 200, 0, 4095);
-  outputValue2 = map(grams2, 0, 200, 0, 4095);
+  outputValueRight = map(grams, 0, 200, 0, 4095);
  
-  if (outputValue > 4000) outputValue = 4000;
-  if (outputValue < 1) outputValue = 0;
-  //if (outputValue2 > 4000) outputValue2 = 4000;
-  //if (outputValue2 < 1) outputValue2 = 0;
+  if (outputValueRight > 4000) outputValueRight = 4000;
+  if (outputValueRight < 1) outputValueRight = 0;
 
   //analogWrite(A0, outputValue2);
   //analogWrite(A1, outputValue);
   
-  scaleChange += abs(outputValue - lastReading);
-  //scaleChange2 += abs(outputValue2 - lastReading2);
+  scaleChangeRight += abs(outputValueRight - lastReadingRight);
+  lastReadingRight = outputValueRight;
 
-  lastReading = outputValue;
-  lastReading2 = outputValue2;
   
   //control pixel color based on load cells 
-  pixels.setPixelColor(0, pixels.Color(0, outputValue / 100, outputValue2 / 100)); 
-  pixels.show();
+  //pixels.setPixelColor(0, pixels.Color(0, outputValue / 100, outputValue2 / 100)); 
+  //pixels.show();
 
   lick = digitalRead(18) == HIGH;
   Tare();
