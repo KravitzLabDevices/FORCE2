@@ -1,7 +1,81 @@
 
+/////////////////////////////////////////////////////////////////////////
+// Begin
+/////////////////////////////////////////////////////////////////////////
+void Force::begin() {
+  Serial.begin(9600);
+
+  if (!ss.begin()) {
+    Serial.println("seesaw couldn't be found!");
+    while (1);
+  }
+
+  // Initialize pins
+  pinMode(A0, OUTPUT);
+  pinMode(BEEPER, OUTPUT);
+  
+  pinMode(LICKOMETER, INPUT_PULLDOWN);
+  pinMode(PUMP1, OUTPUT);
+  digitalWrite(PUMP1, LOW);
+  
+  pinMode(LICKOMETER2, INPUT_PULLDOWN);
+  pinMode(PUMP2, OUTPUT) ;
+  digitalWrite(PUMP2, LOW); 
+
+  // Initialize display
+  ss.tftReset();                  // Reset the display
+  ss.setBacklight(1);             // Adjust backlight (this doesn't really seem to work unless you do -1 to turn it off)
+  tft.initR(INITR_MINI160x80);    // Initialize a ST7735S chip, mini display
+  tft.setRotation(3);
+  tft.fillScreen(ST77XX_BLACK);
+
+  // Initialize RTC
+  if (!rtc.initialized() || rtc.lostPower()) {
+    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+  }
+
+  rtc.start();
+
+  // Initialize neopixel
+  pixels.begin();
+
+  //start SPI flash
+  Serial.print("flash begin...");
+  flash.begin();
+  // Open file system on the flash
+  if ( !fatfs.begin(&flash) ) {
+    Serial.println("Error: filesystem is not existed. Please try SdFat_format example to make one.");
+    while (1) yield();
+  }
+  Serial.println("done.");
+
+  load_settings();
+
+  // Initialize load cells
+  analogWriteResolution(12);  // turn on 12 bit resolution
+  scaleLeft.begin(DOUT1, CLK1);
+  scaleLeft.tare();
+  scalLefte.set_scale(calibration_factor);
+  
+  scaleRight.begin(DOUT2, CLK2);
+  scaleRight.tare();
+  scaleRight.set_scale(calibration_factor);  
+
+  //start up menu
+  start_up_menu();
+  tft.fillScreen(ST77XX_BLACK);
+
+  // Initialize SD
+  SdFile::dateTimeCallback(dateTime);
+  CreateDataFile();
+  writeHeader();
+
+}
+
+
 
 /////////////////////////////////////////////////////////////////////////
-//     
+//Run function to updates things on every loop///////////////////////////
 /////////////////////////////////////////////////////////////////////////
 void Force::run() {
   UpdateDisplay();
@@ -106,23 +180,23 @@ void Force::SenseLeft() {
   }
   
     
-  outputValueLeft = map(gramsLeft, 0, 200, 0, 4095);
+ // outputValueLeft = map(gramsLeft, 0, 200, 0, 4095);
   //outputValue2 = map(grams2, 0, 200, 0, 4095);
  
-  if (outputValueLeft > 4000) outputValue = 4000;
-  if (outputValueLeft < 1) outputValueLeft = 0;
+  //if (outputValueLeft > 4000) outputValue = 4000;
+  //if (outputValueLeft < 1) outputValueLeft = 0;
 
   //analogWrite(A0, outputValue2);
   //analogWrite(A1, outputValue);
   
-  scaleChangeLeft += abs(outputValueLeft - lastReadingLeft);
-  lastReadingLeft = outputValueLeft;
+  //scaleChangeLeft += abs(outputValueLeft - lastReadingLeft);
+  //lastReadingLeft = outputValueLeft;
   
   //control pixel color based on load cells 
   //pixels.setPixelColor(0, pixels.Color(0, outputValue / 100, outputValue2 / 100)); 
   //pixels.show();
 
-  lick = digitalRead(18) == HIGH;
+  lick = digitalRead(LICKOMETER1) == HIGH;
   Tare();
   check_buttons();
 }
@@ -147,23 +221,23 @@ void Force::SenseRight() {
   }
   
     
-  outputValueRight = map(grams, 0, 200, 0, 4095);
+  //outputValueRight = map(grams, 0, 200, 0, 4095);
  
-  if (outputValueRight > 4000) outputValueRight = 4000;
-  if (outputValueRight < 1) outputValueRight = 0;
+  //if (outputValueRight > 4000) outputValueRight = 4000;
+  //if (outputValueRight < 1) outputValueRight = 0;
 
   //analogWrite(A0, outputValue2);
   //analogWrite(A1, outputValue);
   
-  scaleChangeRight += abs(outputValueRight - lastReadingRight);
-  lastReadingRight = outputValueRight;
+  //scaleChangeRight += abs(outputValueRight - lastReadingRight);
+  //lastReadingRight = outputValueRight;
 
   
   //control pixel color based on load cells 
   //pixels.setPixelColor(0, pixels.Color(0, outputValue / 100, outputValue2 / 100)); 
   //pixels.show();
 
-  lick = digitalRead(18) == HIGH;
+  lick = digitalRead(LICKOMETER2) == HIGH;
   Tare();
   check_buttons();
 }
