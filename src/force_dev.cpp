@@ -1,3 +1,30 @@
+//SETUP QSPI FLASH
+Adafruit_FlashTransport_QSPI flashTransport;
+Adafruit_SPIFlash flash(&flashTransport);
+FatFileSystem fatfs;
+File myFile;
+
+/////////////////////////////////////////////////////////////////////////
+// Initialize FORCE!
+/////////////////////////////////////////////////////////////////////////
+Force::Force(String ver) {
+  library_version = ver; 
+}
+
+/////////////////////////////////////////////////////////////////////////
+// RTC Functions 
+/////////////////////////////////////////////////////////////////////////
+RTC_PCF8523 rtc;
+
+void dateTime(uint16_t* date, uint16_t* time) {
+  DateTime now = rtc.now();
+  // return date using FAT_DATE macro to format fields
+  *date = FAT_DATE(now.year(), now.month(), now.day());
+
+  // return time using FAT_TIME macro to format fields
+  *time = FAT_TIME(now.hour(), now.minute(), now.second());
+}
+
 
 /////////////////////////////////////////////////////////////////////////
 // Begin
@@ -85,6 +112,75 @@ void Force::run() {
   //SerialOutput();
 }
   
+/////////////////////////////////////////////////////////////////////////
+// Buttons Functions 
+/////////////////////////////////////////////////////////////////////////
+void Force::check_buttons() {
+  uint32_t buttons = ss.readButtons();
+    
+  if (! (buttons & TFTWING_BUTTON_A)) {
+    pixels.setPixelColor(0, pixels.Color(0, 0, 50)); //Light Neopixel blue
+    pixels.show();
+  }
+  
+ if ((! (buttons & TFTWING_BUTTON_A)) and ! (buttons & TFTWING_BUTTON_B)){
+    delay (1000);
+    uint32_t buttons = ss.readButtons();
+    if ((! (buttons & TFTWING_BUTTON_A)) and ! (buttons & TFTWING_BUTTON_B)){
+      pixels.setPixelColor(0, pixels.Color(50, 0, 0)); //Light Neopixel red
+      tft.fillScreen(ST77XX_BLACK);
+      tft.setCursor(40, 35);  
+      tft.setTextColor(ST7735_WHITE);
+      tft.println("Solenoid flush");   
+      pixels.show();
+      digitalWrite(SOLENOID, HIGH);
+      tft.setCursor(40, 50);  
+      tft.print("500");
+      delay (100);
+      tft.print("400");
+      delay (100);
+      tft.print("300");
+      delay (100);
+      tft.print("200");
+      delay (100);
+      tft.print("1");
+      delay (100);
+      digitalWrite(SOLENOID, LOW);
+      tft.fillScreen(ST77XX_BLACK);
+    }
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////Timeout function////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+void Force::Timeout(int timeout_length) {
+  dispense_time = millis();
+  while ((millis() - dispense_time) < (timeout_length * 1000)){
+    tft.setCursor(85, 44);
+    tft.setTextColor(ST7735_WHITE);
+    tft.print("Timeout:");
+    tft.print((-(millis() - dispense_time - (timeout_length*1000))/ 1000),1);
+    run();
+    tft.fillRect(84, 43, 80, 12, ST7735_BLACK);
+    if ((grams > 1.5) or (grams2 > 1.5)) { //reset timeout if either lever pushed
+      Timeout(timeout_length); 
+      tft.fillRect(12, 0, 38, 24, ST7735_BLACK); // clear the text after F1 F2 labels
+    }
+  }
+  tft.fillRect(12, 0, 38, 24, ST7735_BLACK); // clear the text after F1 F2 labels
+}
+
+/////////////////////////////////////////////////////////////////////////
+// Sound Functions 
+/////////////////////////////////////////////////////////////////////////
+void Force::Tone(int frequency, int duration) {
+  tone(A5, frequency, duration);
+}
+
+void Force::Click() {
+  tone(A5, 800, 8);
+}
 
 ///////////////////////////
 ///////Disepense Left//////
@@ -241,3 +337,4 @@ void Force::SenseRight() {
   Tare();
   check_buttons();
 }
+
