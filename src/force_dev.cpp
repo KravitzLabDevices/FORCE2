@@ -25,6 +25,158 @@ void dateTime(uint16_t* date, uint16_t* time) {
   *time = FAT_TIME(now.hour(), now.minute(), now.second());
 }
 
+/////////////////////////////////////////////////////////////////////////
+// Load from settings.txt on SPI flash
+/////////////////////////////////////////////////////////////////////////
+void Force::load_settings() {
+  Serial.println("*****************************");
+  Serial.println("Loading device Settings:");
+  //read settings from SPI flash
+  myFile = fatfs.open("settings.txt");
+  if (myFile) {
+    calibrated = true;
+    Serial.println ("settings.txt found. Contents:");
+    while (myFile.available()) {
+      for (int i = 0; i < 12; i++) {
+        settings_recalled[i] = myFile.parseInt();
+        Serial.println(settings_recalled[i]);
+      }
+      myFile.read();
+      // close the file:
+      myFile.close();
+
+      FRC = settings_recalled[0];
+      req = settings_recalled[1];
+      dispense_amount = 2000;
+      dispense_delay = settings_recalled[3];
+      timeout_length = settings_recalled[4] ;
+      ratio = settings_recalled[5];
+      hold_time = settings_recalled [6];
+      calibration_factor = settings_recalled[7];
+      calibration_factor2 = settings_recalled[8];
+      PR = settings_recalled[9];
+      trials_per_block = settings_recalled[10];
+      max_force = settings_recalled[11];
+    }
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////
+// Save to settings.txt on SPI flash
+/////////////////////////////////////////////////////////////////////////
+void Force::save_settings() {
+  Serial.println("*****************************");
+  Serial.println("Saving device Settings:");
+  //open and delete the settings file
+  myFile = fatfs.open("settings.txt", FILE_WRITE);
+  if (myFile) {
+    Serial.print ("settings.txt found, deleting.... ");
+    myFile.remove();
+    myFile.close();
+    Serial.println ("done.");
+  }
+
+  settings[0] = FRC;
+  settings[1] = req;
+  settings[2] = dispense_amount;
+  settings[3] = dispense_delay;
+  settings[4] = timeout_length;
+  settings[5] = ratio;
+  settings[6] = hold_time;
+  settings[7] = calibration_factor;
+  settings[8] = calibration_factor2;
+  settings[9] = PR;
+  settings[10] = trials_per_block;
+  settings [11] = max_force;
+
+  //rewrite settings file
+  myFile = fatfs.open("settings.txt", FILE_WRITE);
+  Serial.print ("re-creating settings.txt file.");
+  if (myFile) {
+    for (int i = 0; i < 12; i++) {
+      myFile.print(settings[i]);   // These are my settings
+      myFile.print(",");   // These are my settings
+      Serial.print(".");
+    }
+    myFile.close();
+    Serial.println("done.");
+  }
+  
+  //reopen and read back file on QSPI flash 
+  Serial.print("Reading settings.txt back...");
+  myFile = fatfs.open("settings.txt");
+  if (myFile) {
+    Serial.println("opened...contents: ");
+    // read from the file until there's nothing else in it:
+    while (myFile.available()) {
+      Serial.write(myFile.read());
+    }
+    // close the file:
+    myFile.close();
+    Serial.println("done.");
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////
+// reset settings
+/////////////////////////////////////////////////////////////////////////
+void Force::reset_settings() {
+  Serial.println("*****************************");
+  Serial.println("Reseting device settings:");
+  FRC = 1;
+  req = 2;
+  dispense_amount = 4;
+  dispense_delay = 4;
+  timeout_length = 10;
+  ratio = 1;
+  hold_time = 350;
+  calibration_factor = -3300;
+  calibration_factor2 = -3300;
+  PR = 0;
+  trials_per_block = 10;
+  max_force = 20;
+  tft.fillScreen(ST77XX_BLACK);
+  tft.setCursor(40, 35);
+  tft.setTextColor(ST7735_WHITE);
+  tft.println("Settings reset");
+  start_up_menu();
+}
+
+/////////////////////////////////////////////////////////////////////////
+// print settings
+/////////////////////////////////////////////////////////////////////////
+void Force::print_settings() {
+  Serial.println("*****************************");
+  Serial.println("Printing local device settings:");
+  Serial.print("Device#: "); Serial.println(FRC);
+  Serial.print("Req: "); Serial.println(req);
+  Serial.print("dispense_amount: "); Serial.println(dispense_amount);
+  Serial.print("dispense_delay: "); Serial.println(dispense_delay);
+  Serial.print("timeout_length: ");  Serial.println(timeout_length);
+  Serial.print("ratio: "); Serial.println(ratio);
+  Serial.print("hold_time: "); Serial.println(hold_time);
+  Serial.print("calibration_factor: "); Serial.println(calibration_factor);
+  Serial.print("calibration_factor2: "); Serial.println(calibration_factor2);
+  if (PR==0) Serial.println("Fixed Ratio");
+  if (PR==1) Serial.println("Prog Ratio");
+  Serial.print ("Trials per block: "); Serial.println(trials_per_block);
+  Serial.print ("Max force: "); Serial.println(max_force);
+  Serial.println(" ");
+  
+  Serial.print("Reading from SPI flash...");
+  myFile = fatfs.open("settings.txt");
+  if (myFile) {
+    Serial.println("reading contents of settings.txt...");
+    // read from the file until there's nothing else in it:
+    while (myFile.available()) {
+      Serial.write(myFile.read());
+    }
+    // close the file:
+    myFile.close();
+    Serial.println("done.");
+  }
+}
+
 
 /////////////////////////////////////////////////////////////////////////
 // Begin
@@ -80,6 +232,7 @@ void Force::begin() {
 
   // Initialize load cells
   analogWriteResolution(12);  // turn on 12 bit resolution
+  
   scaleLeft.begin(DOUT1, CLK1);
   scaleLeft.tare();
   scalLefte.set_scale(calibration_factor);
@@ -112,6 +265,8 @@ void Force::run() {
   //SerialOutput();
 }
   
+
+
 /////////////////////////////////////////////////////////////////////////
 // Buttons Functions 
 /////////////////////////////////////////////////////////////////////////
@@ -131,9 +286,10 @@ void Force::check_buttons() {
       tft.fillScreen(ST77XX_BLACK);
       tft.setCursor(40, 35);  
       tft.setTextColor(ST7735_WHITE);
-      tft.println("Solenoid flush");   
+      tft.println("Pump flush");   
       pixels.show();
-      digitalWrite(SOLENOID, HIGH);
+      digitalWrite(PUMP1, HIGH);
+      digitalWrite(PUMP2, HIGH);
       tft.setCursor(40, 50);  
       tft.print("500");
       delay (100);
@@ -145,11 +301,15 @@ void Force::check_buttons() {
       delay (100);
       tft.print("1");
       delay (100);
-      digitalWrite(SOLENOID, LOW);
+      digitalWrite(PUMP1, LOW);
+      digitalWrite(PUMP2, LOW);
       tft.fillScreen(ST77XX_BLACK);
     }
   }
 }
+
+
+
 
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////Timeout function////////////////////////////////
@@ -163,7 +323,7 @@ void Force::Timeout(int timeout_length) {
     tft.print((-(millis() - dispense_time - (timeout_length*1000))/ 1000),1);
     run();
     tft.fillRect(84, 43, 80, 12, ST7735_BLACK);
-    if ((grams > 1.5) or (grams2 > 1.5)) { //reset timeout if either lever pushed
+    if ((gramsLeft > 1.5) or (gramsRight > 1.5)) { //reset timeout if either lever pushed
       Timeout(timeout_length); 
       tft.fillRect(12, 0, 38, 24, ST7735_BLACK); // clear the text after F1 F2 labels
     }
@@ -175,11 +335,11 @@ void Force::Timeout(int timeout_length) {
 // Sound Functions 
 /////////////////////////////////////////////////////////////////////////
 void Force::Tone(int frequency, int duration) {
-  tone(A5, frequency, duration);
+  tone(BEEPER, frequency, duration);
 }
 
 void Force::Click() {
-  tone(A5, 800, 8);
+  tone(BEEPER, 800, 8);
 }
 
 ///////////////////////////
@@ -236,7 +396,7 @@ void Force::DispenseRight() {
     tft.print((-(millis() - successTime - (dispense_delay*1000))/ 1000),1);
     run();
     tft.fillRect(84, 43, 80, 12, ST7735_BLACK); // remove Delay text when timeout is over
-    if (grams > 1 or grams2 >1){ //only clear F1 and F2 values if levers are being pushed
+    if (gramsLeft > 1 or gramsRight >1){ //only clear F1 and F2 values if levers are being pushed
       tft.fillRect(12, 0, 38, 24, ST7735_BLACK); // clear the text after label
     }
   }
@@ -262,9 +422,7 @@ void Force::DispenseRight() {
 
 void Force::SenseLeft() {
   gramsLeft = (scaleLeft.get_units());
-  //grams2 = (scale2.get_units());
   if (gramsLeft < 0) gramsLeft = 0;
-  //if (grams2 < 0) grams2 = 0;
   
   if (gramsLeft < reqLeft){
     pressTimeLeft = millis();
@@ -303,10 +461,8 @@ void Force::SenseLeft() {
 
 void Force::SenseRight() {
   gramsRight = (scaleRight.get_units());
-  //grams2 = (scale2.get_units());
   if (gramsRight < 0) gramsRight = 0;
-  //if (grams2 < 0) grams2 = 0;
-  
+
   if (gramsRight < reqRight){
     pressTimeRight = millis();
     pressLengthRight = 0;
@@ -315,7 +471,6 @@ void Force::SenseRight() {
   if (gramsRight > reqRight) {
     pressLengthRight = (millis() - pressTimeRight);
   }
-  
     
   //outputValueRight = map(grams, 0, 200, 0, 4095);
  
@@ -337,4 +492,5 @@ void Force::SenseRight() {
   Tare();
   check_buttons();
 }
+
 
