@@ -49,17 +49,20 @@ void Force::load_settings() {
       myFile.close();
 
       FRC = settings_recalled[0];
-      req = settings_recalled[1];
+      reqLeft = settings_recalled[1];
+      reqRight = settings_recalled[2];
       dispense_amount = 2000;
-      dispense_delay = settings_recalled[3];
-      timeout_length = settings_recalled[4] ;
-      ratio = settings_recalled[5];
-      hold_time = settings_recalled [6];
-      calibration_factor = settings_recalled[7];
-      calibration_factor2 = settings_recalled[8];
-      PR = settings_recalled[9];
-      trials_per_block = settings_recalled[10];
-      max_force = settings_recalled[11];
+      dispense_delay = settings_recalled[4];
+      timeout_length = settings_recalled[5] ;
+      ratioLeft = settings_recalled[6];
+      ratioRight = settings_recalled[7];
+      hold_timeLeft = settings_recalled [8];
+      hold_timeRight = settings_recalled[9];
+      calibration_factor_Left = settings_recalled[10];
+      calibration_factor_Right = settings_recalled[11];
+      PR = settings_recalled[12];
+      trials_per_block = settings_recalled[13];
+      max_force = settings_recalled[14];
     }
   }
 }
@@ -80,17 +83,20 @@ void Force::save_settings() {
   }
 
   settings[0] = FRC;
-  settings[1] = req;
-  settings[2] = dispense_amount;
-  settings[3] = dispense_delay;
-  settings[4] = timeout_length;
-  settings[5] = ratio;
-  settings[6] = hold_time;
-  settings[7] = calibration_factor;
-  settings[8] = calibration_factor2;
-  settings[9] = PR;
-  settings[10] = trials_per_block;
-  settings [11] = max_force;
+  settings[1] = reqLeft;
+  settings[2] = reqRight;
+  settings[3] = dispense_amount;
+  settings[4] = dispense_delay;
+  settings[5] = timeout_length;
+  settings[6] = ratioLeft;
+  settings[7] = ratioRight;
+  settings[8] = hold_timeLeft;
+  settings[9] = hold_timeRight;
+  settings[10] = calibration_factor_Left;
+  settings[11] = calibration_factor_Right;
+  settings[12] = PR;
+  settings[13] = trials_per_block;
+  settings [14] = max_force;
 
   //rewrite settings file
   myFile = fatfs.open("settings.txt", FILE_WRITE);
@@ -127,14 +133,17 @@ void Force::reset_settings() {
   Serial.println("*****************************");
   Serial.println("Reseting device settings:");
   FRC = 1;
-  req = 2;
+  reqLeft = 2;
+  reqRight = 2;
   dispense_amount = 4;
   dispense_delay = 4;
   timeout_length = 10;
-  ratio = 1;
-  hold_time = 350;
-  calibration_factor = -3300;
-  calibration_factor2 = -3300;
+  ratioLeft = 1;
+  ratioRight = 1;
+  hold_timeLeft = 350;
+  hold_timeRight = 350;
+  calibration_factor_Left = -3300;
+  calibration_factor_Right = -3300;
   PR = 0;
   trials_per_block = 10;
   max_force = 20;
@@ -152,14 +161,17 @@ void Force::print_settings() {
   Serial.println("*****************************");
   Serial.println("Printing local device settings:");
   Serial.print("Device#: "); Serial.println(FRC);
-  Serial.print("Req: "); Serial.println(req);
+  Serial.print("Req_Left: "); Serial.println(reqLeft);
+  Serial.print("Req_Right: "); Serial.println(reqRight);
   Serial.print("dispense_amount: "); Serial.println(dispense_amount);
   Serial.print("dispense_delay: "); Serial.println(dispense_delay);
   Serial.print("timeout_length: ");  Serial.println(timeout_length);
-  Serial.print("ratio: "); Serial.println(ratio);
-  Serial.print("hold_time: "); Serial.println(hold_time);
-  Serial.print("calibration_factor: "); Serial.println(calibration_factor);
-  Serial.print("calibration_factor2: "); Serial.println(calibration_factor2);
+  Serial.print("ratio_Left: "); Serial.println(ratioLeft);
+  Serial.print("ratio_Right: "); Serial.println(ratioRight);
+  Serial.print("hold_time_Left: "); Serial.println(hold_timeLeft);
+  Serial.print("hold_time_Right: "); Serial.println(hold_timeRight);
+  Serial.print("calibration_factor_Left: "); Serial.println(calibration_factor_Left);
+  Serial.print("calibration_factor_Right: "); Serial.println(calibration_factor_Right);
   if (PR==0) Serial.println("Fixed Ratio");
   if (PR==1) Serial.println("Prog Ratio");
   Serial.print ("Trials per block: "); Serial.println(trials_per_block);
@@ -196,7 +208,8 @@ void Force::begin() {
   pinMode(A0, OUTPUT);
   pinMode(BEEPER, OUTPUT);
   
-  pinMode(LICKOMETER, INPUT_PULLDOWN);
+  pinMode(LICKOMETER1, INPUT_PULLDOWN);
+  pinMode(LICKOMETER2, INPUT_PULLDOWN);
   pinMode(PUMP1, OUTPUT);
   digitalWrite(PUMP1, LOW);
   
@@ -238,11 +251,11 @@ void Force::begin() {
   
   scaleLeft.begin(DOUT1, CLK1);
   scaleLeft.tare();
-  scalLefte.set_scale(calibration_factor);
+  scaleLeft.set_scale(calibration_factor_Left);
   
   scaleRight.begin(DOUT2, CLK2);
   scaleRight.tare();
-  scaleRight.set_scale(calibration_factor);  
+  scaleRight.set_scale(calibration_factor_Right);  
 
   //start up menu
   start_up_menu();
@@ -377,7 +390,7 @@ void Force::DispenseLeft() {
   dispenseTime = now.unixtime();
   //digitalWrite(A2, LOW);
   //digitalWrite(13, LOW);
-  pressTime = millis();
+  pressTimeLeft = millis();
   pressLengthLeft = 0;
   dispensing = false;
 }
@@ -414,7 +427,7 @@ void Force::DispenseRight() {
   dispenseTime = now.unixtime();
   //digitalWrite(A2, LOW);
   //digitalWrite(13, LOW);
-  pressTime = millis();
+  pressTimeRight = millis();
   pressLengthRight = 0;
   dispensing = false;
 }

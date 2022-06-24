@@ -150,7 +150,7 @@ class Force {
     int pressesRight = 0;
     int reqRight = 2;
     int ratioRight = 1;
-     int hold_timeRight = 350;
+    int hold_timeRight = 350;
             
     unsigned long pressStart = 0;    
     int trials_per_block = 10;
