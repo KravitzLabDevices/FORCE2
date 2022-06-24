@@ -25,19 +25,19 @@ void setup() {
   force.trial_available = false;
   force.LeftActive = true;
   force.RightActive = false;
-  
 }
 
 void loop() {  
   force.run();                                          //call force.run() at least once per loop
   if (POKE == HIGH) {
-    Tone();
-    trial_available = true;
+    force.Tone();
+    force.trial_available = true;
     trial_start = millis();
-    Tare();
+    force.Tare();
     while (millis()-trial_start < trial_window) {
-      SenseLeft();
-      SenseRight();
+      force.run()
+      force.SenseLeft();
+      force.SenseRight();
       if ((force.pressLengthLeft > force.hold_timeLeft) && (LeftActive == true)) {
         force.pressesLeft ++;
         if (force.pressesLeft == force.ratioLeft) {

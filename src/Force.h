@@ -138,6 +138,8 @@ class Force {
     bool lick = false;
     int start_timer = 0;
     int trial = 0;
+    int trial_start = 0;
+    int trial_window = 10000;
     
     int pressesLeft = 0;
     int reqLeft = 2;    
