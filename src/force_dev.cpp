@@ -1,3 +1,6 @@
+#include "Arduino.h"
+#include "Force.h"
+
 //SETUP QSPI FLASH
 Adafruit_FlashTransport_QSPI flashTransport;
 Adafruit_SPIFlash flash(&flashTransport);
@@ -339,7 +342,7 @@ void Force::Tone(int frequency, int duration) {
 }
 
 void Force::Click() {
-  tone(BEEPER, 800, 8);
+  tone(BEEPER, 800, 200);
 }
 
 ///////////////////////////
