@@ -116,7 +116,7 @@ class Force {
     float dispense_time = 0;
     int dispense_amount = 2000;
     void DispenseLeft();
-    void DispenseRight()
+    void DispenseRight();
 
     // --- Lever functions --- //
     int dispense_delay = 4;
@@ -139,7 +139,8 @@ class Force {
     int start_timer = 0;
     int trial = 0;
     int trial_start = 0;
-    int trial_window = 10000;
+    int trial_window = 10000; // Time window between possible start of the trial and lever press
+    bool trial_available = false;
     
     int pressesLeft = 0;
     int reqLeft = 2;    
@@ -161,9 +162,6 @@ class Force {
     bool shock = false;
     bool dispensing = false;
     
-    int trial_window = 10000; // Time window between possible start of the trial and lever press
-    bool trial_available = false;
-
     // --- Serial out--- //
     void SerialOutput();
 
