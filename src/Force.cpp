@@ -1284,7 +1284,7 @@ void Force::SenseRight() {
     pressLengthRight = (millis() - pressTimeRight);
   }
     
-  outputValueRight = map(grams, 0, 200, 0, 4095);
+  outputValueRight = map(gramsRight, 0, 200, 0, 4095);
  
   if (outputValueRight > 4000) outputValueRight = 4000;
   if (outputValueRight < 1) outputValueRight = 0;
