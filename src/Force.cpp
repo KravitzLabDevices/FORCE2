@@ -620,19 +620,19 @@ void Force::graphLegend() {
 /////////////////////////////////////////////////////////////////////////
 void Force::Tare() {
   if (millis() - start_timer > 5000)  {
-    if (scaleChange < 1000) {  // this sets sensitivity for delaying taring
+    if (scaleChangeLeft < 1000) {  // this sets sensitivity for delaying taring
       pixels.setPixelColor(0, pixels.Color(0, 10, 10));
       pixels.show();
       scale.tare();
     }
-    if (scaleChange2 < 1000) {
+    if (scaleChangeRight < 1000) {
       pixels.setPixelColor(0, pixels.Color(10, 10, 0));
       pixels.show();
       scale2.tare();
     }
     start_timer = millis();
-    scaleChange  = 0;
-    scaleChange2  = 0;
+    scaleChangeLeft  = 0;
+    scaleChangeRight  = 0;
   }
 }
 
