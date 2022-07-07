@@ -29,31 +29,26 @@ void setup() {
 
 void loop() {  
   force.run();                                          //call force.run() at least once per loop
-  if (POKE == HIGH) {
-    force.Tone();
-    force.trial_available = true;
-    trial_start = millis();
-    force.Tare();
-    while (millis()-trial_start < trial_window) {
-      force.run()
-      force.SenseLeft();
-      force.SenseRight();
-      if ((force.pressLengthLeft > force.hold_timeLeft) && (LeftActive == true)) {
-        force.pressesLeft ++;
-        if (force.pressesLeft == force.ratioLeft) {
-          force.DispenseLeft();
-          force.pressesLeft = 0
-          }
-        }
-      if ((force.pressLengthRight > force.hold_timeRight) && (RightActive == true)) {
-        force.pressesRight ++;
-        if (force.pressesRight == force.ratioRight) {
-          force.DispenseRight();
-          force.pressesRight = 0
-          }
-        }
+  force.Tone();
+  force.trial_available = true;
+  force.trial_start = millis();
+  force.Tare();
+  force.SenseLeft();
+  force.SenseRight();
+  if ((force.pressLengthLeft > force.hold_timeLeft) && (force.LeftActive == true)) {
+    force.pressesLeft ++;
+    if (force.pressesLeft == force.ratioLeft) {
+      force.DispenseLeft();
+      force.pressesLeft = 0;
       }
-    force.trial_available = false
-    force.Timeout(force.timeout_length);  
-  }
+    }
+  if ((force.pressLengthRight > force.hold_timeRight) && (force.RightActive == true)) {
+    force.pressesRight ++;
+    if (force.pressesRight == force.ratioRight) {
+      force.DispenseRight();
+      force.pressesRight = 0;
+      }
+    }
+  force.trial_available = false;
+  force.Timeout(force.timeout_length);  
 }
