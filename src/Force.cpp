@@ -285,7 +285,6 @@ void Force::begin() {
 /////////////////////////////////////////////////////////////////////////
 void Force::run() {
   UpdateDisplay();
-  WriteToSD();
   DateTime now = rtc.now();
   unixtime  = now.unixtime();
   //SerialOutput();
@@ -360,7 +359,7 @@ void Force::CreateDataFile() {
 
 // Write data header to file of uSD.
 void Force::writeHeader() {
-  logfile.println("MM:DD:YYYY hh:mm:ss, Seconds, Library_Version, Program, Device_Number, ProgressiveRatio, Grams_req, Hold_time, Ratio, Dispense_amount, Dispense_delay, Timeout, Trials_per_block, Max_force, Trial, Press, Lever1_Grams, Lever2_Grams, Licks, Dispense, Random_Num, Shock_trial");
+  logfile.println("MM:DD:YYYY hh:mm:ss, Seconds, Library_Version, Program, Device_Number, ProgressiveRatio, Grams_req, Hold_time, Ratio, Dispense_amount, Dispense_delay, Timeout, Trials_per_block, Max_force, TrialLeft, TrialRight, Press, Lever1_Grams, Lever2_Grams, Licks, Dispense, Random_Num, Shock_trial");
 }
 
 // Print data and time followed by pellet count and motorturns to SD card
@@ -423,7 +422,10 @@ void Force::WriteToSD() {
   logfile.print(max_force);
   logfile.print(",");
  
-  logfile.print(trial);
+  logfile.print(trialLeft);
+  logfile.print(",");
+  
+  logfile.print(trialRight);
   logfile.print(",");
   
   logfile.print(pressesLeft);
