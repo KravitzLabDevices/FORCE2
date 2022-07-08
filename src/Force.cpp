@@ -1284,7 +1284,7 @@ void Force::Click() {
 
 void Force::DispenseLeft() {
   dispensing = true;
-  trial++;
+  trialLeft++;
   Tone();
   float successTime = millis();
   while ((millis() - successTime) < (dispense_delay * 1000)){
@@ -1321,7 +1321,7 @@ void Force::DispenseLeft() {
 
 void Force::DispenseRight() {
   dispensing = true;
-  trial++;
+  trialRight++;
   Tone();
   float successTime = millis();
   while ((millis() - successTime) < (dispense_delay * 1000)){

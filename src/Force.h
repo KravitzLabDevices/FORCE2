@@ -139,7 +139,6 @@ class Force {
     bool lickLeft = false;
     bool lickRight = false;
     int start_timer = 0;
-    int trial = 0;
     int trial_start = 0;
     int trial_window = 10000; // Time window between possible start of the trial and lever press
     int trial_length = 0;
@@ -149,11 +148,13 @@ class Force {
     int reqLeft = 2;    
     int ratioLeft = 1;
     int hold_timeLeft = 350;
+    int trialLeft = 0;
             
     int pressesRight = 0;
     int reqRight = 2;
     int ratioRight = 1;
     int hold_timeRight = 350;
+    int trialRight = 0;
             
     unsigned long pressStart = 0;    
     int trials_per_block = 10;
