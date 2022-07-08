@@ -37,8 +37,9 @@ void loop() {
     force.trial_start = millis();
     force.trial_length = millis() - force.trial_start;
     force.Tare();
-    while (millis()-(force.trial_length < force.trial_window)) {
+    while (force.trial_length < force.trial_window) {
       force.trial_length = millis() - force.trial_start;
+      Serial.println(force.trial_length);
       force.run();
       force.SenseLeft();
       if (force.pressLengthLeft > force.hold_timeLeft) {
