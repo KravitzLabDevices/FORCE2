@@ -49,60 +49,28 @@ void Force::load_settings() {
       myFile.close();
 
       FRC = settings_recalled[0];
-      reqLeft = 2;
-      reqRight = 2;
-      dispense_amount = 2000;
-      dispense_delay = 4;
-      timeout_length = 10;
-      ratioLeft = 1;
-      ratioRight = 1;
-      hold_timeLeft = 250;
-      hold_timeRight = 250;
-      calibration_factor_Left = -3300;
-      calibration_factor_Right = -3300;
-      PR = false;
-      trials_per_block = 10;
-      max_force = 20;
+      trial_window = settings_recalles[1];
+      LeftActive = settings_recalled[2];
+      RightActive = settings_recalled[3];
+      reqLeft = settings_recalled[4];
+      reqRight = settings_recalled[5];
+      hold_timeLeft = settings_recalled[6];
+      hold_timeRight = settings_recalled[7];
+      ratioLeft = settings_recalled[8];
+      ratioRight = settings_recalled[9];
+      dispense_delay = settings_recalled[10];
+      dispense_amount = settings_recalled[11];
+      timeout_length = settings_recalled[12];
+      calibration_factor_Left = settings_recalled[13];
+      calibration_factor_Right = settings_recalled[14];
+      PR = settings_recalled[15];
+      trials_per_block = settings_recalled[16];
+      max_force = settings_recalled[17];
+
     }
   }
 }
 
-
-/*void Force::load_settings() {
-  Serial.println("*****************************");
-  Serial.println("Loading device Settings:");
-  //read settings from SPI flash
-  myFile = fatfs.open("settings.txt");
-  if (myFile) {
-    calibrated = true;
-    Serial.println ("settings.txt found. Contents:");
-    while (myFile.available()) {
-      for (int i = 0; i < 12; i++) {
-        settings_recalled[i] = myFile.parseInt();
-        Serial.println(settings_recalled[i]);
-      }
-      myFile.read();
-      // close the file:
-      myFile.close();
-
-      FRC = settings_recalled[0];
-      reqLeft = settings_recalled[1];
-      reqRight = settings_recalled[2];
-      dispense_amount = 2000;
-      dispense_delay = settings_recalled[4];
-      timeout_length = settings_recalled[5] ;
-      ratioLeft = settings_recalled[6];
-      ratioRight = settings_recalled[7];
-      hold_timeLeft = settings_recalled [8];
-      hold_timeRight = settings_recalled[9];
-      calibration_factor_Left = settings_recalled[10];
-      calibration_factor_Right = settings_recalled[11];
-      PR = settings_recalled[12];
-      trials_per_block = settings_recalled[13];
-      max_force = settings_recalled[14];
-    }
-  }
-}*/
 
 /////////////////////////////////////////////////////////////////////////
 // Save to settings.txt on SPI flash
@@ -120,20 +88,23 @@ void Force::save_settings() {
   }
 
   settings[0] = FRC;
-  settings[1] = reqLeft;
-  settings[2] = reqRight;
-  settings[3] = dispense_amount;
-  settings[4] = dispense_delay;
-  settings[5] = timeout_length;
-  settings[6] = ratioLeft;
-  settings[7] = ratioRight;
-  settings[8] = hold_timeLeft;
-  settings[9] = hold_timeRight;
-  settings[10] = calibration_factor_Left;
-  settings[11] = calibration_factor_Right;
-  settings[12] = PR;
-  settings[13] = trials_per_block;
-  settings [14] = max_force;
+  settings[1] = trial_window;
+  settings[2] = LeftActive;
+  settings[3] = RightActive;
+  settings[4] = reqLeft;
+  settings[5] = reqRight;
+  settings[6] = hold_timeLeft;
+  settings[7] = hold_timeRight;
+  settings[8] = ratioLeft;
+  settings[9] = ratioRight;
+  settings[10] = dispense_delay;
+  settings[11] = dispense_amount;
+  settings[12] = timeout_length;
+  settings[13] = calibration_factor_Left;
+  settings[14] = calibration_factor_Right;
+  settings[15] = PR;
+  settings[16] = trials_per_block;
+  settings[17] = max_force;
 
   //rewrite settings file
   myFile = fatfs.open("settings.txt", FILE_WRITE);
@@ -170,25 +141,23 @@ void Force::reset_settings() {
   Serial.println("*****************************");
   Serial.println("Reseting device settings:");
   FRC = 1;
+  trial_window = 10000;
+  LeftActive = true;
+  RightActive = true;
   reqLeft = 2;
   reqRight = 2;
-  dispense_amount = 4;
-  dispense_delay = 4;
-  timeout_length = 10;
-  ratioLeft = 1;
-  ratioRight = 1;
   hold_timeLeft = 350;
   hold_timeRight = 350;
+  ratioLeft = 1;
+  ratioRight = 1;
+  dispense_delay = 4;
+  dispense_amount = 2000;
+  timeout_length = 10;
   calibration_factor_Left = -3300;
   calibration_factor_Right = -3300;
-  PR = 0;
+  PR = false;
   trials_per_block = 10;
   max_force = 20;
-  tft.fillScreen(ST77XX_BLACK);
-  tft.setCursor(40, 35);
-  tft.setTextColor(ST7735_WHITE);
-  tft.println("Settings reset");
-  start_up_menu();
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -198,17 +167,20 @@ void Force::print_settings() {
   Serial.println("*****************************");
   Serial.println("Printing local device settings:");
   Serial.print("Device#: "); Serial.println(FRC);
+  Serial.print("Trial window"); Serial.println(trial_window);
+  Serial.print("Left Active"); Serial.println(LeftActive);
+  Serial.print("Right Active"); Serial.println(RightActive);
   Serial.print("Req_Left: "); Serial.println(reqLeft);
   Serial.print("Req_Right: "); Serial.println(reqRight);
-  Serial.print("dispense_amount: "); Serial.println(dispense_amount);
-  Serial.print("dispense_delay: "); Serial.println(dispense_delay);
-  Serial.print("timeout_length: ");  Serial.println(timeout_length);
-  Serial.print("ratio_Left: "); Serial.println(ratioLeft);
-  Serial.print("ratio_Right: "); Serial.println(ratioRight);
   Serial.print("hold_time_Left: "); Serial.println(hold_timeLeft);
   Serial.print("hold_time_Right: "); Serial.println(hold_timeRight);
+  Serial.print("ratio_Left: "); Serial.println(ratioLeft);
+  Serial.print("ratio_Right: "); Serial.println(ratioRight);\
+  Serial.print("dispense_delay: "); Serial.println(dispense_delay);
+  Serial.print("dispense_amount: "); Serial.println(dispense_amount);
+  Serial.print("timeout_length: ");  Serial.println(timeout_length);
   Serial.print("calibration_factor_Left: "); Serial.println(calibration_factor_Left);
-  Serial.print("calibration_factor_Right: "); Serial.println(calibration_factor_Right);
+  Serial.print("calibration_factor_Right: "); Serial.println(calibration_factor_Right); 
   if (PR==0) Serial.println("Fixed Ratio");
   if (PR==1) Serial.println("Prog Ratio");
   Serial.print ("Trials per block: "); Serial.println(trials_per_block);
@@ -789,30 +761,70 @@ void Force::start_up_menu() {
       }
 
       //option 1
-      tft.print("ratio Left:       ");
-      tft.println(ratioLeft);
+      tft.print("Trial window:       ");
+      tft.println(trial_window);
       if (option == 1) {
         if (! (buttons & TFTWING_BUTTON_RIGHT)) {
           start_timer = millis();
-          ratioLeft ++;
+          tiral_window ++;
           delay (250);
           tft.fillRect(0, (option * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
 
         }
         if (! (buttons & TFTWING_BUTTON_LEFT)) {
           start_timer = millis();
-          ratioLeft --;
-          if (ratioLeft < 0) ratioLeft = 0;
+          trial_window --;
+          if (trial_window < 0) trial_window = 0;
           delay (250);
           tft.fillRect(0, (option * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
         }
       }
 
       //option 2
+      tft.print("Left lever:       ");
+      if (LeftActive == 1) tft.println("Active");
+      if (leftActive == 0) tft.println("Inactive");
+      if (option == 2) {
+        if (! (buttons & TFTWING_BUTTON_RIGHT)) {
+          start_timer = millis();
+          delay (250);
+          leftActive = 1;
+          tft.fillRect(0, (option * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
+
+        }
+        if (! (buttons & TFTWING_BUTTON_LEFT)) {
+          start_timer = millis();
+          delay (250);
+          leftActive = 0;
+          tft.fillRect(0, (option * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
+        }
+      }
+      
+      //option 3
+      tft.print("Right lever:       ");
+      if (rightActive == 1) tft.println("Active");
+      if (rightActive == 0) tft.println("Inactive");
+      if (option == 3) {
+        if (! (buttons & TFTWING_BUTTON_RIGHT)) {
+          start_timer = millis();
+          delay (250);
+          rightActive = 1;
+          tft.fillRect(0, (option * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
+
+        }
+        if (! (buttons & TFTWING_BUTTON_LEFT)) {
+          start_timer = millis();
+          delay (250);
+          righttActive = 0;
+          tft.fillRect(0, (option * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
+        }
+      } 
+      
+      //option 4
       tft.print("force_req_Left:   ");
       tft.print(reqLeft);
       tft.println(" g");
-      if (option == 2) {
+      if (option == 4) {
         if (! (buttons & TFTWING_BUTTON_RIGHT)) {
           start_timer = millis();
           reqLeft ++;
@@ -827,70 +839,28 @@ void Force::start_up_menu() {
           tft.fillRect(0, (option * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
         }
       }
-
-      //option 3
-      tft.print("hold_time:      ");
-      tft.print(hold_timeLeft);
-      tft.println(" ms");
-      if (option == 3) {
+      
+      //option 5
+      tft.print("force_req_Right:   ");
+      tft.print(reqRight);
+      tft.println(" g");
+      if (option == 5) {
         if (! (buttons & TFTWING_BUTTON_RIGHT)) {
           start_timer = millis();
-          Click();
-          hold_timeLeft += 10;
+          reqRight ++;
           delay (250);
           tft.fillRect(0, (option * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
 
         }
         if (! (buttons & TFTWING_BUTTON_LEFT)) {
           start_timer = millis();
-          Click();
-          hold_timeLeft -= 10;
+          reqRight --;
           delay (250);
           tft.fillRect(0, (option * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
         }
       }
       
-      //option 4
-      tft.print("dispense_delay: ");
-      tft.print(dispense_delay);
-      tft.println(" s");
-      if (option == 4) {
-        if (! (buttons & TFTWING_BUTTON_RIGHT)) {
-          start_timer = millis();
-          dispense_delay += 1;
-          delay (250);
-          tft.fillRect(0, (option * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
 
-        }
-        if (! (buttons & TFTWING_BUTTON_LEFT)) {
-          start_timer = millis();
-          dispense_delay -= 1;
-          delay (250);
-          tft.fillRect(0, (option * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
-        }
-      }
-            
-      //option 5
-      tft.print("timeout:        ");
-      tft.print(timeout_length);
-      tft.println(" s");
-      if (option == 5) {
-        if (! (buttons & TFTWING_BUTTON_RIGHT)) {
-          start_timer = millis();
-          Click();
-          timeout_length += 1;
-          delay (250);
-          tft.fillRect(0, (option * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
-
-        }
-        if (! (buttons & TFTWING_BUTTON_LEFT)) {
-          start_timer = millis();
-          Click();
-          timeout_length -= 1;
-          delay (250);
-          tft.fillRect(0, (option * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
-        }
-      }
 
 
       //button up
@@ -964,10 +934,155 @@ void Force::start_up_menu() {
       tft.setTextColor(ST7735_CYAN);
 
       //option 6
+      tft.print("hold_Left:     ");
+      tft.print(hold_timeLeft);
+      tft.println(" ms");
+      if (option == 6) {
+        if (! (buttons & TFTWING_BUTTON_RIGHT)) {
+          start_timer = millis();
+          Click();
+          hold_timeLeft += 10;
+          delay (250);
+          tft.fillRect(0, (option * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
+
+        }
+        if (! (buttons & TFTWING_BUTTON_LEFT)) {
+          start_timer = millis();
+          Click();
+          hold_timeLeft -= 10;
+          delay (250);
+          tft.fillRect(0, (option * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
+        }
+      }
+      
+      //option 7
+      tft.print("hold_Right:     ");
+      tft.print(hold_timeRight);
+      tft.println(" ms");
+      if (option == 7) {
+        if (! (buttons & TFTWING_BUTTON_RIGHT)) {
+          start_timer = millis();
+          Click();
+          hold_timeRight += 10;
+          delay (250);
+          tft.fillRect(0, (option * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
+
+        }
+        if (! (buttons & TFTWING_BUTTON_LEFT)) {
+          start_timer = millis();
+          Click();
+          hold_timeRight -= 10;
+          delay (250);
+          tft.fillRect(0, (option * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
+        }
+      }
+      
+      //option 8
+      tft.print("ratio Left:       ");
+      tft.println(ratioLeft);
+      if (option == 8) {
+        if (! (buttons & TFTWING_BUTTON_RIGHT)) {
+          start_timer = millis();
+          ratioLeft ++;
+          delay (250);
+          tft.fillRect(0, (option * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
+
+        }
+        if (! (buttons & TFTWING_BUTTON_LEFT)) {
+          start_timer = millis();
+          ratioLeft --;
+          if (ratioLeft < 0) ratioLeft = 0;
+          delay (250);
+          tft.fillRect(0, (option * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
+        }
+      }
+
+      //option 9
+      tft.print("ratio Right:       ");
+      tft.println(ratioLeft);
+      if (option == 9) {
+        if (! (buttons & TFTWING_BUTTON_RIGHT)) {
+          start_timer = millis();
+          ratioRight ++;
+          delay (250);
+          tft.fillRect(0, (option * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
+
+        }
+        if (! (buttons & TFTWING_BUTTON_LEFT)) {
+          start_timer = millis();
+          ratioRight --;
+          if (ratioRight < 0) ratioRight = 0;
+          delay (250);
+          tft.fillRect(0, (option * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
+        }
+      }
+      
+      //option 10
+      tft.print("dispense_delay: ");
+      tft.print(dispense_delay);
+      tft.println(" s");
+      if (option == 10) {
+        if (! (buttons & TFTWING_BUTTON_RIGHT)) {
+          start_timer = millis();
+          dispense_delay += 1;
+          delay (250);
+          tft.fillRect(0, (option * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
+
+        }
+        if (! (buttons & TFTWING_BUTTON_LEFT)) {
+          start_timer = millis();
+          dispense_delay -= 1;
+          delay (250);
+          tft.fillRect(0, (option * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
+        }
+      }
+      
+      //option 11
+      tft.print("dispense_amount: ");
+      tft.print(dispense_amount);
+      if (option == 11) {
+        if (! (buttons & TFTWING_BUTTON_RIGHT)) {
+          start_timer = millis();
+          dispense_amount += 100;
+          delay (250);
+          tft.fillRect(0, (option * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
+
+        }
+        if (! (buttons & TFTWING_BUTTON_LEFT)) {
+          start_timer = millis();
+          dispense_amount -= 100;
+          delay (250);
+          tft.fillRect(0, (option * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
+        }
+      }
+      
+      //option 12
+      tft.print("timeout:        ");
+      tft.print(timeout_length);
+      tft.println(" s");
+      if (option == 12) {
+        if (! (buttons & TFTWING_BUTTON_RIGHT)) {
+          start_timer = millis();
+          Click();
+          timeout_length += 1;
+          delay (250);
+          tft.fillRect(0, (option * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
+
+        }
+        if (! (buttons & TFTWING_BUTTON_LEFT)) {
+          start_timer = millis();
+          Click();
+          timeout_length -= 1;
+          delay (250);
+          tft.fillRect(0, (option * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
+        }
+      }
+      
+      //option 13
       tft.print("Prog ratio: ");
       if (PR == 0) tft.println("off");
       if (PR == 1) tft.println("on");
-      if (option == 6) {
+      if (option == 13) {
         if (! (buttons & TFTWING_BUTTON_RIGHT)) {
           start_timer = millis();
           delay (250);
@@ -984,10 +1099,10 @@ void Force::start_up_menu() {
         }
       }
       
-      //option 7
+      //option 14
       tft.print("Trials per block: ");
       tft.println(trials_per_block);
-      if (option == 7) {
+      if (option == 14) {
         if (! (buttons & TFTWING_BUTTON_RIGHT)) {
           start_timer = millis();
           delay (250);
@@ -1003,11 +1118,11 @@ void Force::start_up_menu() {
         }
       }
 
-      //option 8
+      //option 15
       tft.print("Max force: ");
       tft.print (max_force);
       tft.println(" g");
-      if (option == 8) {
+      if (option == 15) {
         if (! (buttons & TFTWING_BUTTON_RIGHT)) {
           start_timer = millis();
           delay (250);
@@ -1022,26 +1137,10 @@ void Force::start_up_menu() {
         }
       }
 
-      //option 9
-      tft.println(" ");
-      if (option == 9) {
-        if (! (buttons & TFTWING_BUTTON_RIGHT)) {
-          start_timer = millis();
-          delay (250);
-          tft.fillRect(0, (((option - 6) - 6) * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
-
-        }
-        if (! (buttons & TFTWING_BUTTON_LEFT)) {
-          start_timer = millis();
-          delay (250);
-          tft.fillRect(0, ((option - 6) * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
-        }
-      }
-
-      //option 10
+      //option 16
       tft.setTextColor(ST7735_RED);
       tft.println("Calibrate FORCE");
-      if (option == 10) {
+      if (option == 16) {
         if (! (buttons & TFTWING_BUTTON_RIGHT) or ! (buttons & TFTWING_BUTTON_SELECT)) {
           start_timer = millis();
           Tone();
@@ -1052,10 +1151,10 @@ void Force::start_up_menu() {
         }
       }
       
-      //option 11
+      //option 17
       tft.setTextColor(ST7735_RED);
       tft.println("Reset settings");
-      if (option == 11) {
+      if (option == 17) {
         if (! (buttons & TFTWING_BUTTON_RIGHT) or ! (buttons & TFTWING_BUTTON_SELECT)) {
           start_timer = millis();
           delay (250);
@@ -1125,6 +1224,15 @@ void Force::start_up_menu() {
     
   }
 }
+
+
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////Timeout function////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+void Force::readPoke() {
+  poke = digitalRead(POKE) == LOW;
+}
+
 
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////Timeout function////////////////////////////////

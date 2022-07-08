@@ -130,6 +130,7 @@ class Force {
 
     // --- Trial functions--- //
     int FRC = 1;          // This is the unique # of the device
+    bool poke = false;
     bool PR = false;
     void Tone(int frequency = 500, int duration = 200);
     void Click();
