@@ -244,6 +244,7 @@ void Force::begin() {
   // Initialize pins
   pinMode(A0, OUTPUT);
   pinMode(BEEPER, OUTPUT);
+  pinMode(POKE, INPUT);
   
   pinMode(LICKOMETER1, INPUT_PULLDOWN);
   pinMode(LICKOMETER2, INPUT_PULLDOWN);
@@ -1136,6 +1137,8 @@ void Force::Timeout(int timeout_length) {
     tft.print("Timeout:");
     tft.print((-(millis() - dispense_time - (timeout_length*1000))/ 1000),1);
     run();
+    SenseLeft();
+    SenseRight();
     tft.fillRect(84, 43, 80, 12, ST7735_BLACK);
     if ((gramsLeft > 1.5) or (gramsRight > 1.5)) { //reset timeout if either lever pushed
       Timeout(timeout_length); 

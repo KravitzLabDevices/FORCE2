@@ -20,35 +20,40 @@
 String ver = "Force";                                  //unique identifier text
 Force force(ver);                                       //start FORCE object
 
+
 void setup() {
   force.begin();                                        //setup FORCE
   force.trial_available = false;
   force.LeftActive = true;
-  force.RightActive = false;
+  force.RightActive = true;
+  Serial.begin(9600);
 }
 
 void loop() {  
   force.run();                                          //call force.run() at least once per loop
-  force.Tone();
-  force.trial_available = true;
-  force.trial_start = millis();
-  force.Tare();
-  force.SenseLeft();
-  force.SenseRight();
-  if ((force.pressLengthLeft > force.hold_timeLeft) && (force.LeftActive == true)) {
-    force.pressesLeft ++;
-    if (force.pressesLeft == force.ratioLeft) {
-      force.DispenseLeft();
-      force.pressesLeft = 0;
+  if (digitalRead(POKE) == LOW) {
+    force.Tone();
+    force.trial_available = true;
+    force.trial_start = millis();
+    force.Tare();
+    while (millis()-(force.trial_start < force.trial_window)) {
+      force.run();
+      force.SenseLeft();
+      if (force.pressLengthLeft > force.hold_timeLeft) {
+        //force.Tone(2000, 200);
+        force.DispenseLeft();
+        force.pressesLeft = 0;
+        force.Timeout(force.timeout_length);
+        }
+      force.SenseRight();
+      if (force.pressLengthRight > force.hold_timeRight) {
+        //force.Tone(500, 200);
+        force.DispenseRight();
+        force.pressesRight = 0;
+        force.Timeout(force.timeout_length);
       }
-    }
-  if ((force.pressLengthRight > force.hold_timeRight) && (force.RightActive == true)) {
-    force.pressesRight ++;
-    if (force.pressesRight == force.ratioRight) {
-      force.DispenseRight();
-      force.pressesRight = 0;
-      }
-    }
-  force.trial_available = false;
-  force.Timeout(force.timeout_length);  
+    force.trial_available = false;
+    
+    }  
+  }
 }
