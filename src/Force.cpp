@@ -49,6 +49,43 @@ void Force::load_settings() {
       myFile.close();
 
       FRC = settings_recalled[0];
+      reqLeft = 2;
+      reqRight = 2;
+      dispense_amount = 2000;
+      dispense_delay = 4;
+      timeout_length = 10;
+      ratioLeft = 1;
+      ratioRight = 1;
+      hold_timeLeft = 250;
+      hold_timeRight = 250;
+      calibration_factor_Left = -3300;
+      calibration_factor_Right = -3300;
+      PR = false;
+      trials_per_block = 10;
+      max_force = 20;
+    }
+  }
+}
+
+
+/*void Force::load_settings() {
+  Serial.println("*****************************");
+  Serial.println("Loading device Settings:");
+  //read settings from SPI flash
+  myFile = fatfs.open("settings.txt");
+  if (myFile) {
+    calibrated = true;
+    Serial.println ("settings.txt found. Contents:");
+    while (myFile.available()) {
+      for (int i = 0; i < 12; i++) {
+        settings_recalled[i] = myFile.parseInt();
+        Serial.println(settings_recalled[i]);
+      }
+      myFile.read();
+      // close the file:
+      myFile.close();
+
+      FRC = settings_recalled[0];
       reqLeft = settings_recalled[1];
       reqRight = settings_recalled[2];
       dispense_amount = 2000;
@@ -65,7 +102,7 @@ void Force::load_settings() {
       max_force = settings_recalled[14];
     }
   }
-}
+}*/
 
 /////////////////////////////////////////////////////////////////////////
 // Save to settings.txt on SPI flash
@@ -207,6 +244,7 @@ void Force::begin() {
   // Initialize pins
   pinMode(A0, OUTPUT);
   pinMode(BEEPER, OUTPUT);
+  pinMode(POKE, INPUT);
   
   pinMode(LICKOMETER1, INPUT_PULLDOWN);
   pinMode(LICKOMETER2, INPUT_PULLDOWN);
@@ -618,6 +656,24 @@ void Force::graphLegend() {
 /////////////////////////////////////////////////////////////////////////
 // Calibration function
 /////////////////////////////////////////////////////////////////////////
+void Force::Tare() {
+  if (millis() - start_timer > 5000)  {
+    if (scaleChangeLeft < 1000) {  // this sets sensitivity for delaying taring
+      pixels.setPixelColor(0, pixels.Color(0, 10, 10));
+      pixels.show();
+      scaleLeft.tare();
+    }
+    if (scaleChangeRight < 1000) {
+      pixels.setPixelColor(0, pixels.Color(10, 10, 0));
+      pixels.show();
+      scaleRight.tare();
+    }
+    start_timer = millis();
+    scaleChangeLeft  = 0;
+    scaleChangeRight  = 0;
+  }
+}
+
 void Force::Calibrate(){
   bool lever1 = true;
   tft.fillScreen(ST77XX_BLACK);
@@ -1081,6 +1137,8 @@ void Force::Timeout(int timeout_length) {
     tft.print("Timeout:");
     tft.print((-(millis() - dispense_time - (timeout_length*1000))/ 1000),1);
     run();
+    SenseLeft();
+    SenseRight();
     tft.fillRect(84, 43, 80, 12, ST7735_BLACK);
     if ((gramsLeft > 1.5) or (gramsRight > 1.5)) { //reset timeout if either lever pushed
       Timeout(timeout_length); 
@@ -1193,17 +1251,15 @@ void Force::SenseLeft() {
   }
   
     
- // outputValueLeft = map(gramsLeft, 0, 200, 0, 4095);
-  //outputValue2 = map(grams2, 0, 200, 0, 4095);
+  outputValueLeft = map(gramsLeft, 0, 200, 0, 4095);
  
-  //if (outputValueLeft > 4000) outputValue = 4000;
-  //if (outputValueLeft < 1) outputValueLeft = 0;
+  if (outputValueLeft > 4000) outputValueLeft = 4000;
+  if (outputValueLeft < 1) outputValueLeft = 0;
 
-  //analogWrite(A0, outputValue2);
-  //analogWrite(A1, outputValue);
+  //analogWrite(A1, outputValueLeft);
   
-  //scaleChangeLeft += abs(outputValueLeft - lastReadingLeft);
-  //lastReadingLeft = outputValueLeft;
+  scaleChangeLeft += abs(outputValueLeft - lastReadingLeft);
+  lastReadingLeft = outputValueLeft;
   
   //control pixel color based on load cells 
   //pixels.setPixelColor(0, pixels.Color(0, outputValue / 100, outputValue2 / 100)); 
@@ -1231,16 +1287,15 @@ void Force::SenseRight() {
     pressLengthRight = (millis() - pressTimeRight);
   }
     
-  //outputValueRight = map(grams, 0, 200, 0, 4095);
+  outputValueRight = map(gramsRight, 0, 200, 0, 4095);
  
-  //if (outputValueRight > 4000) outputValueRight = 4000;
-  //if (outputValueRight < 1) outputValueRight = 0;
+  if (outputValueRight > 4000) outputValueRight = 4000;
+  if (outputValueRight < 1) outputValueRight = 0;
 
-  //analogWrite(A0, outputValue2);
-  //analogWrite(A1, outputValue);
+  //analogWrite(A0, outputValueRight);
   
-  //scaleChangeRight += abs(outputValueRight - lastReadingRight);
-  //lastReadingRight = outputValueRight;
+  scaleChangeRight += abs(outputValueRight - lastReadingRight);
+  lastReadingRight = outputValueRight;
 
   
   //control pixel color based on load cells 

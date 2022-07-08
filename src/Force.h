@@ -101,7 +101,7 @@ class Force {
     // --- SD File --- //
     SdFat SD;
     File logfile;               // Create file object
-    char filename[15];          // Array for file name data logged to named in setup
+    char filename[21];          // Array for file name data logged to named in setup
     const int chipSelect = 10;
     void CreateDataFile();
     void writeHeader();
