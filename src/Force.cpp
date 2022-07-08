@@ -603,18 +603,31 @@ void Force::graphLegend() {
 
   //Indicate licks
   tft.fillRect(0, 27, 40, 12, ST7735_BLACK); // clear the text after label
-  if (lick == true) {
+  if (lickLeft == true) {
     tft.setTextColor(ST7735_WHITE);
     tft.setCursor(0, 28);
-    tft.print ("Lick");
+    tft.print ("Lick left");
     digitalWrite(A3, HIGH);  //CHECK THIS, MIGHT NOT BE THE RIGHT PIN
     DateTime now = rtc.now();
     lickTime = now.unixtime();
   }
 
-  if (lick == false) {
-
+  if (lickLeft == false) {
     digitalWrite(A3, LOW); //CHECK THIS, MIGHT NOT BE THE RIGHT PIN
+
+  }
+  
+  if (lickRight == true) {
+    tft.setTextColor(ST7735_WHITE);
+    tft.setCursor(0, 28);
+    tft.print ("Lick right");
+    digitalWrite(A3, HIGH);  //THIS IS DEFINITELY NOT RIGHT PIN!
+    DateTime now = rtc.now();
+    lickTime = now.unixtime();
+  }
+
+  if (lickRight == false) {
+    digitalWrite(A3, LOW); //THIS IS DEFINITELY NOT RIGHT PIN!
 
   }
   
@@ -859,8 +872,6 @@ void Force::start_up_menu() {
           tft.fillRect(0, (option * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
         }
       }
-      
-
 
 
       //button up
@@ -1410,7 +1421,7 @@ void Force::SenseRight() {
   //pixels.setPixelColor(0, pixels.Color(0, outputValue / 100, outputValue2 / 100)); 
   //pixels.show();
 
-  lick = digitalRead(LICKOMETER2) == HIGH;
+  lickRight = digitalRead(LICKOMETER2) == HIGH;
   Tare();
   check_buttons();
 }

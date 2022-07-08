@@ -136,7 +136,8 @@ class Force {
     void Click();
     void Timeout(int timeout_length = 10);
     int timeout_length = 10;
-    bool lick = false;
+    bool lickLeft = false;
+    bool lickRight = false;
     int start_timer = 0;
     int trial = 0;
     int trial_start = 0;
