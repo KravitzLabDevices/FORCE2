@@ -35,14 +35,16 @@ void loop() {
     force.Tone();
     force.trial_available = true;
     force.trial_start = millis();
+    force.trial_length = millis() - force.trial_start;
     force.Tare();
-    while (millis()-(force.trial_start < force.trial_window)) {
+    while (millis()-(force.trial_length < force.trial_window)) {
+      force.trial_length = millis() - force.trial_start;
       force.run();
       force.SenseLeft();
       if (force.pressLengthLeft > force.hold_timeLeft) {
         //force.Tone(2000, 200);
         force.DispenseLeft();
-        force.pressesLeft = 0;
+        force.pressesLeft = 0;                                                                         
         force.Timeout(force.timeout_length);
         }
       force.SenseRight();
