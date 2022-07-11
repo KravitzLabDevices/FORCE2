@@ -24,8 +24,6 @@ Force force(ver);                                       //start FORCE object
 void setup() {
   force.begin();                                        //setup FORCE
   force.trial_available = false;
-  force.LeftActive = true;
-  force.RightActive = true;
   Serial.begin(9600);
 }
 
@@ -39,9 +37,9 @@ void loop() {
     force.trial_length = millis() - force.trial_start;
     force.Tare();
     while (force.trial_length < force.trial_window) {
-      force.lodgdata();
+      force.logdata();
       force.trial_length = millis() - force.trial_start;
-      Serial.println(force.trial_length);
+      //Serial.println(force.trial_length);
       force.run();
       force.SenseLeft();
       if (force.pressLengthLeft > force.hold_timeLeft) {
