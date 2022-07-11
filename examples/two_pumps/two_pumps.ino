@@ -24,28 +24,29 @@ Force force(ver);                                       //start FORCE object
 void setup() {
   force.begin();                                        //setup FORCE
   force.trial_available = false;
-  force.LeftActive = true;
-  force.RightActive = true;
   Serial.begin(9600);
 }
 
 void loop() {  
   force.run();                                          //call force.run() at least once per loop
   if (digitalRead(POKE) == LOW) {
+    force.logdata();
     force.Tone();
     force.trial_available = true;
     force.trial_start = millis();
     force.trial_length = millis() - force.trial_start;
     force.Tare();
     while (force.trial_length < force.trial_window) {
+      force.logdata();
       force.trial_length = millis() - force.trial_start;
-      Serial.println(force.trial_length);
+      //Serial.println(force.trial_length);
       force.run();
       force.SenseLeft();
       if (force.pressLengthLeft > force.hold_timeLeft) {
         //force.Tone(2000, 200);
         force.DispenseLeft();
-        force.pressesLeft = 0;                                                                         
+        force.pressesLeft = 0;
+        force.logdata();                                                                         
         force.Timeout(force.timeout_length);
         }
       force.SenseRight();
@@ -53,6 +54,7 @@ void loop() {
         //force.Tone(500, 200);
         force.DispenseRight();
         force.pressesRight = 0;
+        force.logdata();
         force.Timeout(force.timeout_length);
       }
     force.trial_available = false;

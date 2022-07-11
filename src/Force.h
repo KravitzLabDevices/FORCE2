@@ -55,6 +55,7 @@ class Force {
     void begin();
     void run();
     void check_buttons();
+    void readPoke();
     
     // --- TFT display wing --- //
     Adafruit_miniTFTWing ss;
@@ -76,20 +77,20 @@ class Force {
 
     // --- Load Cells --- //
     HX711 scaleLeft;
-    float calibration_factor_Left = -3300;    
+    int calibration_factor_Left = -3300;    
     float scaleChangeLeft = 0;    // Load cell 1
     float lastReadingLeft = 0;    // Load cell 1        
     float gramsLeft;    
     float outputValueLeft;        // Load cell 1
-    bool LeftActive;
+
         
     HX711 scaleRight;
-    float calibration_factor_Right = -3300;    
+    int calibration_factor_Right = -3300;    
     float scaleChangeRight = 0;   // Load cell 2
     float lastReadingRight = 0;   // Load cell 2
     float outputValueRight;       // Load cell 2
     float gramsRight;
-    bool RightActive; 
+
     
     void SenseLeft();
     void SenseRight();
@@ -123,21 +124,23 @@ class Force {
     
     unsigned long pressLengthLeft = 0;
     unsigned long pressTimeLeft = 0;
-    
     unsigned long pressLengthRight = 0;
     unsigned long pressTimeRight = 0;  
       
 
     // --- Trial functions--- //
     int FRC = 1;          // This is the unique # of the device
-    bool PR = false;
+    int LeftActive = 1;
+    int RightActive = 1;     
+    bool poke = false;
+    int PR = 0;
     void Tone(int frequency = 500, int duration = 200);
     void Click();
     void Timeout(int timeout_length = 10);
     int timeout_length = 10;
-    bool lick = false;
+    bool lickLeft = false;
+    bool lickRight = false;
     int start_timer = 0;
-    int trial = 0;
     int trial_start = 0;
     int trial_window = 10000; // Time window between possible start of the trial and lever press
     int trial_length = 0;
@@ -147,11 +150,13 @@ class Force {
     int reqLeft = 2;    
     int ratioLeft = 1;
     int hold_timeLeft = 350;
+    int trialLeft = 0;
             
     int pressesRight = 0;
     int reqRight = 2;
     int ratioRight = 1;
     int hold_timeRight = 350;
+    int trialRight = 0;
             
     unsigned long pressStart = 0;    
     int trials_per_block = 10;
@@ -172,8 +177,8 @@ class Force {
     void save_settings();
     
     // --- save and load settings from QSPI flash --- //
-    int settings[9];  //array for saving settings on QSPI flash
-    int settings_recalled[9]; //arrat for reading from QSPI flash
+    int settings[18];  //array for saving settings on QSPI flash
+    int settings_recalled[18]; //array for reading from QSPI flash
     void load_settings();
     void reset_settings();
     void print_settings();
