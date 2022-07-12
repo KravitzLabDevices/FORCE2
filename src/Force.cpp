@@ -284,11 +284,14 @@ void Force::begin() {
 /////////////////////////////////////////////////////////////////////////
 //Run function to updates things on every loop///////////////////////////
 /////////////////////////////////////////////////////////////////////////
-void Force::run() {
+void Force::run(bool log_data) {
+  SenseLeft();
+  SenseRight();
   UpdateDisplay();
   DateTime now = rtc.now();
   unixtime  = now.unixtime();
-  //SerialOutput();
+  check_buttons();
+  if (log_data == true) logdata();
 }
   
 
@@ -1332,9 +1335,7 @@ void Force::Timeout(int timeout_length) {
     tft.setTextColor(ST7735_WHITE);
     tft.print("Timeout:");
     tft.print((-(millis() - dispense_time - (timeout_length*1000))/ 1000),1);
-    run();
-    SenseLeft();
-    SenseRight();
+    run(false);
     tft.fillRect(84, 43, 80, 12, ST7735_BLACK);
     if ((gramsLeft > 1.5) or (gramsRight > 1.5)) { //reset timeout if either lever pushed
       Timeout(timeout_length); 
@@ -1463,7 +1464,6 @@ void Force::SenseLeft() {
 
   lickLeft = digitalRead(LICKOMETER1) == HIGH;
   Tare();
-  check_buttons();
 }
 
 ///////////////////////////
@@ -1500,7 +1500,6 @@ void Force::SenseRight() {
 
   lickRight = digitalRead(LICKOMETER2) == HIGH;
   Tare();
-  check_buttons();
 }
 
 

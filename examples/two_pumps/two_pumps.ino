@@ -28,37 +28,30 @@ void setup() {
 }
 
 void loop() {  
-  force.run();                                          //call force.run() at least once per loop
-  if (digitalRead(POKE) == LOW) {
-    force.logdata();
+  force.run(false);                                          //call force.run() at least once per loop
+  force.readPoke();
+  if (force.poke) {
+    force.run(true);
     force.Tone();
     force.trial_available = true;
     force.trial_start = millis();
     force.trial_length = millis() - force.trial_start;
-    force.Tare();
     while (force.trial_length < force.trial_window) {
-      force.logdata();
+      force.run(true);
       force.trial_length = millis() - force.trial_start;
-      //Serial.println(force.trial_length);
-      force.run();
-      force.SenseLeft();
       if (force.pressLengthLeft > force.hold_timeLeft) {
-        //force.Tone(2000, 200);
+        force.run(true);
         force.DispenseLeft();
-        force.pressesLeft = 0;
-        force.logdata();                                                                         
+        force.pressesLeft = 0;                                                                         
         force.Timeout(force.timeout_length);
         }
-      force.SenseRight();
       if (force.pressLengthRight > force.hold_timeRight) {
-        //force.Tone(500, 200);
+        force.run(true);
         force.DispenseRight();
         force.pressesRight = 0;
-        force.logdata();
         force.Timeout(force.timeout_length);
       }
-    force.trial_available = false;
-    
+    force.trial_available = false;   
     }  
   }
 }
