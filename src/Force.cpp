@@ -585,7 +585,7 @@ void Force::graphLegend() {
   tft.print(reqLeft);
   tft.print("g");
 
-  // Print trial 
+  // Print trial Left
   tft.setCursor(45, 17);
   tft.setTextColor(ST7735_YELLOW);
   tft.print("Trial left:");
@@ -594,21 +594,31 @@ void Force::graphLegend() {
   }
   tft.print(trialLeft);
 
+  // Print trial right
+  tft.setCursor(45,30);
+  tft.setTextColor(ST7735_YELLOW);
+  tft.print("Trial right:");
+  if (gramsLeft > 1 or gramsRight > 1){
+    tft.fillRect(80, 30, 24, 12, ST7735_BLACK);
+  }
+  tft.print(trialRight);
+
   // Print FR ratio
   tft.setCursor(110, 5);
   tft.setTextColor(ST7735_YELLOW);
   if (PR ==0) tft.print("FR:");
   if (PR ==1) tft.print("PR:");
   tft.print(ratioLeft);
+  
 
   // Print current press
-  tft.setCursor(110, 17);
+  /*tft.setCursor(110, 17);
   tft.setTextColor(ST7735_YELLOW);
   tft.print("Press:");
   if (gramsLeft > 1 or gramsRight >1){
     tft.fillRect(143, 17, 28, 12, ST7735_BLACK); // clear press data on each trial
   }
-  tft.print(pressesLeft);
+  */tft.print(pressesLeft);
 
   //Indicate licks
   tft.fillRect(0, 27, 40, 12, ST7735_BLACK); // clear the text after label
