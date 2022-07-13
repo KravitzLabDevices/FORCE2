@@ -23,8 +23,6 @@ Force force(ver);                                       //start FORCE object
 
 void setup() {
   force.begin();                                        //setup FORCE
-  force.trial_available = false;
-  Serial.begin(9600);
 }
 
 void loop() {  
@@ -33,25 +31,21 @@ void loop() {
   if (force.poke) {
     force.run(true);
     force.Tone();
-    force.trial_available = true;
     force.trial_start = millis();
     force.trial_length = millis() - force.trial_start;
     while (force.trial_length < force.trial_window) {
       force.run(true);
       force.trial_length = millis() - force.trial_start;
-      if (force.pressLengthLeft > force.hold_timeLeft) {
+      if ((force.pressLengthLeft > force.hold_timeLeft) && (force.LeftActive) {
         force.run(true);
-        force.DispenseLeft();
-        force.pressesLeft = 0;                                                                         
+        force.DispenseLeft();                                                        
         force.Timeout(force.timeout_length);
         }
-      if (force.pressLengthRight > force.hold_timeRight) {
+      if ((force.pressLengthRight > force.hold_timeRight) && (force.RightActive) {
         force.run(true);
         force.DispenseRight();
-        force.pressesRight = 0;
         force.Timeout(force.timeout_length);
       }
-    force.trial_available = false;   
     }  
   }
 }
