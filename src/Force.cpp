@@ -579,27 +579,27 @@ void Force::graphLegend() {
   tft.print(gramsRight,0);
  
   // Print force requirement
-  tft.setCursor(45, 5);
-  tft.setTextColor(ST7735_YELLOW);
-  tft.print("Req: ");
-  tft.print(reqLeft);
-  tft.print("g");
+  //tft.setCursor(45, 5);
+  //tft.setTextColor(ST7735_YELLOW);
+  //tft.print("Req: ");
+  //tft.print(reqLeft);
+  //tft.print("g");
 
   // Print trial Left
-  tft.setCursor(45, 17);
+  tft.setCursor(45, 5);
   tft.setTextColor(ST7735_YELLOW);
-  tft.print("Trial left:");
+  tft.print("Left:");
   if (gramsLeft > 1 or gramsRight >1){
-    tft.fillRect(80, 17, 24, 12, ST7735_BLACK); // clear task data on each trial
+    tft.fillRect(80, 5, 24, 12, ST7735_BLACK); // clear task data on each trial
   }
   tft.print(trialLeft);
 
   // Print trial right
-  tft.setCursor(45,30);
+  tft.setCursor(45,17);
   tft.setTextColor(ST7735_YELLOW);
-  tft.print("Trial right:");
+  tft.print("Right:");
   if (gramsLeft > 1 or gramsRight > 1){
-    tft.fillRect(80, 30, 24, 12, ST7735_BLACK);
+    tft.fillRect(80, 17, 24, 12, ST7735_BLACK);
   }
   tft.print(trialRight);
 
@@ -610,6 +610,19 @@ void Force::graphLegend() {
   if (PR ==1) tft.print("PR:");
   tft.print(ratioLeft);
   
+  //Print remaining trial window
+  if ((trial_length < trial_window) && (trial_length != 0)) {
+    tft.setCursor(45,30);
+    tft.setTextColor(ST7735_WHITE);
+    tft.print("Trial Available");
+    //tft.print((trial_window - trial_length)/1000, 3);
+    //tft.fillRect(90, 30, 100, 12, ST7735_BLACK);  
+  } else {
+    tft.fillRect(45, 30, 100, 12, ST7735_BLACK);  
+  }
+  
+  
+
 
   // Print current press
   /*tft.setCursor(110, 17);

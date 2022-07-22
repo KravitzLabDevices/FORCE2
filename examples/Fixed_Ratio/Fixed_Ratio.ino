@@ -26,6 +26,7 @@ void setup() {
 }
 
 void loop() {  
+  force.trial_window = 60000;
   force.run(false);                                          //call force.run() at least once per loop
   force.readPoke();
   if (force.poke) {
@@ -34,15 +35,15 @@ void loop() {
     force.trial_start = millis();
     force.trial_length = millis() - force.trial_start;
     while (force.trial_length < force.trial_window) {
-      force.run(true);
+      force.run(false);
       force.trial_length = millis() - force.trial_start;
-      if ((force.pressLengthLeft > force.hold_timeLeft) && (force.LeftActive) {
-        force.run(true);
+      if ((force.pressLengthLeft > force.hold_timeLeft) && (force.LeftActive)) {
+        force.run(false);
         force.DispenseLeft();                                                        
         force.Timeout(force.timeout_length);
         }
-      if ((force.pressLengthRight > force.hold_timeRight) && (force.RightActive) {
-        force.run(true);
+      if ((force.pressLengthRight > force.hold_timeRight) && (force.RightActive)) {
+        force.run(false);
         force.DispenseRight();
         force.Timeout(force.timeout_length);
       }
