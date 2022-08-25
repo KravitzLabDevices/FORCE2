@@ -782,12 +782,11 @@ void Force::start_up_menu() {
       tft.setCursor(40, 5);
       tft.setTextColor(ST7735_MAGENTA);
       tft.println("Menu");
-
       tft.setCursor(0, 20);
       tft.setTextColor(ST7735_CYAN);
 
       //option 0
-      tft.print("device #:       ");
+      tft.print("device #:         ");
       tft.println(FRC);
       if (option == 0) {
         if (! (buttons & TFTWING_BUTTON_RIGHT)) {
@@ -806,7 +805,7 @@ void Force::start_up_menu() {
       }
 
       //option 1
-      tft.print("Trial window:       ");
+      tft.print("Trial window:     ");
       tft.println(trial_window);
       if (option == 1) {
         if (! (buttons & TFTWING_BUTTON_RIGHT)) {
@@ -826,9 +825,14 @@ void Force::start_up_menu() {
       }
 
       //option 2
-      tft.print("Left lever:      ");
-      if (LeftActive == 1) tft.println("Active");
-      if (LeftActive == 0) tft.println("Inactive");
+      tft.print("Left lever:       ");
+      if (LeftActive == 1) {
+      tft.println("Active");
+      } else if (LeftActive == 0) {
+      tft.println("Inactive");
+      } else {
+      tft.println(LeftActive);
+      }
       if (option == 2) {
         if (! (buttons & TFTWING_BUTTON_RIGHT)) {
           start_timer = millis();
@@ -846,7 +850,7 @@ void Force::start_up_menu() {
       }
       
       //option 3
-      tft.print("Right lever:     ");
+      tft.print("Right lever:      ");
       if (RightActive == 1) tft.println("Active");
       if (RightActive == 0) tft.println("Inactive");
       if (option == 3) {
@@ -886,7 +890,7 @@ void Force::start_up_menu() {
       }
       
       //option 5
-      tft.print("force_req_Right:   ");
+      tft.print("force_req_Right:  ");
       tft.print(reqRight);
       tft.println(" g");
       if (option == 5) {
@@ -977,7 +981,7 @@ void Force::start_up_menu() {
       tft.setTextColor(ST7735_CYAN);
 
       //option 6
-      tft.print("hold_Left:     ");
+      tft.print("hold_Left:         ");
       tft.print(hold_timeLeft);
       tft.println(" ms");
       if (option == 6) {
@@ -986,7 +990,7 @@ void Force::start_up_menu() {
           Click();
           hold_timeLeft += 10;
           delay (250);
-          tft.fillRect(0, (option * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
+          tft.fillRect(0, ((option - 6) * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
 
         }
         if (! (buttons & TFTWING_BUTTON_LEFT)) {
@@ -994,12 +998,12 @@ void Force::start_up_menu() {
           Click();
           hold_timeLeft -= 10;
           delay (250);
-          tft.fillRect(0, (option * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
+          tft.fillRect(0, ((option - 6) * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
         }
       }
       
       //option 7
-      tft.print("hold_Right:     ");
+      tft.print("hold_Right:        ");
       tft.print(hold_timeRight);
       tft.println(" ms");
       if (option == 7) {
@@ -1008,7 +1012,7 @@ void Force::start_up_menu() {
           Click();
           hold_timeRight += 10;
           delay (250);
-          tft.fillRect(0, (option * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
+          tft.fillRect(0, ((option - 6) * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
 
         }
         if (! (buttons & TFTWING_BUTTON_LEFT)) {
@@ -1016,19 +1020,19 @@ void Force::start_up_menu() {
           Click();
           hold_timeRight -= 10;
           delay (250);
-          tft.fillRect(0, (option * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
+          tft.fillRect(0, ((option - 6) * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
         }
       }
       
       //option 8
-      tft.print("ratio Left:       ");
+      tft.print("ratio Left:        ");
       tft.println(ratioLeft);
       if (option == 8) {
         if (! (buttons & TFTWING_BUTTON_RIGHT)) {
           start_timer = millis();
           ratioLeft ++;
           delay (250);
-          tft.fillRect(0, (option * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
+          tft.fillRect(0, ((option - 6) * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
 
         }
         if (! (buttons & TFTWING_BUTTON_LEFT)) {
@@ -1036,7 +1040,7 @@ void Force::start_up_menu() {
           ratioLeft --;
           if (ratioLeft < 0) ratioLeft = 0;
           delay (250);
-          tft.fillRect(0, (option * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
+          tft.fillRect(0, ((option - 6) * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
         }
       }
 
@@ -1048,7 +1052,7 @@ void Force::start_up_menu() {
           start_timer = millis();
           ratioRight ++;
           delay (250);
-          tft.fillRect(0, (option * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
+          tft.fillRect(0, ((option - 6) * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
 
         }
         if (! (buttons & TFTWING_BUTTON_LEFT)) {
@@ -1056,46 +1060,46 @@ void Force::start_up_menu() {
           ratioRight --;
           if (ratioRight < 0) ratioRight = 0;
           delay (250);
-          tft.fillRect(0, (option * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
+          tft.fillRect(0, ((option - 6) * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
         }
       }
       
       //option 10
-      tft.print("dispense_delay: ");
+      tft.print("dispense_delay:    ");
       tft.print(dispense_delay);
-      tft.println(" s");
+      tft.println("s");
       if (option == 10) {
         if (! (buttons & TFTWING_BUTTON_RIGHT)) {
           start_timer = millis();
           dispense_delay += 1;
           delay (250);
-          tft.fillRect(0, (option * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
+          tft.fillRect(0, ((option - 6) * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
 
         }
         if (! (buttons & TFTWING_BUTTON_LEFT)) {
           start_timer = millis();
           dispense_delay -= 1;
           delay (250);
-          tft.fillRect(0, (option * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
+          tft.fillRect(0, ((option - 6) * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
         }
       }
       
       //option 11
-      tft.print("dispense_amount: ");
+      tft.print("dispense_amount:   ");
       tft.print(dispense_amount);
       if (option == 11) {
         if (! (buttons & TFTWING_BUTTON_RIGHT)) {
           start_timer = millis();
           dispense_amount += 100;
           delay (250);
-          tft.fillRect(0, (option * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
+          tft.fillRect(0, ((option - 6) * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
 
         }
         if (! (buttons & TFTWING_BUTTON_LEFT)) {
           start_timer = millis();
           dispense_amount -= 100;
           delay (250);
-          tft.fillRect(0, (option * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
+          tft.fillRect(0, ((option - 6) * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
         }
       }
       
@@ -1174,16 +1178,16 @@ void Force::start_up_menu() {
       tft.setTextColor(ST7735_CYAN);
       
       //option 12
-      tft.print("timeout:       ");
+      tft.print("timeout:          ");
       tft.print(timeout_length);
-      tft.println(" s");
+      tft.println("s");
       if (option == 12) {
         if (! (buttons & TFTWING_BUTTON_RIGHT)) {
           start_timer = millis();
           Click();
           timeout_length += 1;
           delay (250);
-          tft.fillRect(0, (option * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
+          tft.fillRect(0, ((option - 12) * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
 
         }
         if (! (buttons & TFTWING_BUTTON_LEFT)) {
@@ -1196,7 +1200,7 @@ void Force::start_up_menu() {
       }
       
       //option 13
-      tft.print("Prog ratio: ");
+      tft.print("Prog ratio:       ");
       if (PR == 0) tft.println("off");
       if (PR == 1) tft.println("on");
       if (option == 13) {
@@ -1205,14 +1209,14 @@ void Force::start_up_menu() {
           delay (250);
           PR = 1;
           ratioLeft = 1; //all PR sessions will have the FR ratio of 1
-          tft.fillRect(0, (option * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
+          tft.fillRect(0, ((option - 12) * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
           
         }
         if (! (buttons & TFTWING_BUTTON_LEFT)) {
           start_timer = millis();
           delay (250);
           PR = 0;
-          tft.fillRect(0, (option * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
+          tft.fillRect(0, ((option - 12) * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
         }
       }
       
@@ -1224,19 +1228,19 @@ void Force::start_up_menu() {
           start_timer = millis();
           delay (250);
           trials_per_block ++;
-          tft.fillRect(0, (option * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
+          tft.fillRect(0, ((option - 12) * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
 
         }
         if (! (buttons & TFTWING_BUTTON_LEFT)) {
           start_timer = millis();
           delay (250);
           trials_per_block --;
-          tft.fillRect(0, (option * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
+          tft.fillRect(0, ((option - 12) * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
         }
       }
 
       //option 15
-      tft.print("Max force: ");
+      tft.print("Max force:        ");
       tft.print (max_force);
       tft.println(" g");
       if (option == 15) {
@@ -1244,13 +1248,13 @@ void Force::start_up_menu() {
           start_timer = millis();
           delay (250);
           max_force ++;
-          tft.fillRect(0, (option * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
+          tft.fillRect(0, ((option - 12) * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
         }
         if (! (buttons & TFTWING_BUTTON_LEFT)) {
           start_timer = millis();
           delay (250);
           max_force--;
-          tft.fillRect(0, (option * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
+          tft.fillRect(0, ((option - 12) * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
         }
       }
 

@@ -35,15 +35,15 @@ void loop() {
     force.trial_start = millis();
     force.trial_length = millis() - force.trial_start;
     while (force.trial_length < force.trial_window) {
-      force.run(false);
+      force.run(true);
       force.trial_length = millis() - force.trial_start;
       if ((force.pressLengthLeft > force.hold_timeLeft) && (force.LeftActive)) {
-        force.run(false);
+        force.run(true);
         force.DispenseLeft();                                                        
         force.Timeout(force.timeout_length);
         }
       if ((force.pressLengthRight > force.hold_timeRight) && (force.RightActive)) {
-        force.run(false);
+        force.run(true);
         force.DispenseRight();
         force.Timeout(force.timeout_length);
       }
