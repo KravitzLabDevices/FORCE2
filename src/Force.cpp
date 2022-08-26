@@ -1268,7 +1268,7 @@ void Force::start_up_menu() {
           delay (250);
           calibrate_active = true;
           Calibrate();
-          tft.fillRect(0, (option * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
+          tft.fillRect(0, ((option - 12) * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
         }
       }
       
@@ -1279,7 +1279,7 @@ void Force::start_up_menu() {
         if (! (buttons & TFTWING_BUTTON_RIGHT) or ! (buttons & TFTWING_BUTTON_SELECT)) {
           start_timer = millis();
           delay (250);
-          tft.fillRect(0, (option * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
+          tft.fillRect(0, ((option - 12) * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
           reset_settings();
         }
       }
@@ -1289,7 +1289,7 @@ void Force::start_up_menu() {
         start_timer = millis();
         Click();
         if ((option <= 17) and (option > 11)){
-          tft.fillRect(0, ((option - 13) * 8) + 19, 160, 9, ST7735_BLACK); // erase current bar
+          tft.fillRect(0, ((option - 11) * 8) + 19, 160, 9, ST7735_BLACK); // erase current bar
           tft.fillRect(0, ((option - 12) * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
         }
         delay (150);
