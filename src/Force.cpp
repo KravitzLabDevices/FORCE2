@@ -219,12 +219,11 @@ void Force::begin() {
   pinMode(BEEPER, OUTPUT);
   pinMode(POKE, INPUT);
   
-  pinMode(LICKOMETER1, INPUT_PULLDOWN);
-  pinMode(LICKOMETER2, INPUT_PULLDOWN);
+  pinMode(LICK1, INPUT_PULLDOWN);
   pinMode(PUMP1, OUTPUT);
   digitalWrite(PUMP1, LOW);
   
-  pinMode(LICKOMETER2, INPUT_PULLDOWN);
+  pinMode(LICK2, INPUT_PULLDOWN);
   pinMode(PUMP2, OUTPUT) ;
   digitalWrite(PUMP2, LOW); 
 
@@ -1480,7 +1479,7 @@ void Force::SenseLeft() {
   if (outputValueLeft > 4000) outputValueLeft = 4000;
   if (outputValueLeft < 1) outputValueLeft = 0;
 
-  //analogWrite(A1, outputValueLeft);
+  analogWrite(BNC_OUT1, outputValueLeft);
   
   scaleChangeLeft += abs(outputValueLeft - lastReadingLeft);
   lastReadingLeft = outputValueLeft;
@@ -1489,7 +1488,7 @@ void Force::SenseLeft() {
   //pixels.setPixelColor(0, pixels.Color(0, outputValue / 100, outputValue2 / 100)); 
   //pixels.show();
 
-  lickLeft = digitalRead(LICKOMETER1) == HIGH;
+  lickLeft = digitalRead(LICK1) == HIGH;
   Tare();
 }
 
@@ -1515,7 +1514,7 @@ void Force::SenseRight() {
   if (outputValueRight > 4000) outputValueRight = 4000;
   if (outputValueRight < 1) outputValueRight = 0;
 
-  //analogWrite(A0, outputValueRight);
+  analogWrite(BNC_OUT2, outputValueRight);
   
   scaleChangeRight += abs(outputValueRight - lastReadingRight);
   lastReadingRight = outputValueRight;
@@ -1525,7 +1524,7 @@ void Force::SenseRight() {
   //pixels.setPixelColor(0, pixels.Color(0, outputValue / 100, outputValue2 / 100)); 
   //pixels.show();
 
-  lickRight = digitalRead(LICKOMETER2) == HIGH;
+  lickRight = digitalRead(LICK2) == HIGH;
   Tare();
 }
 
