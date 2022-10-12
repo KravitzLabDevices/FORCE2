@@ -41,8 +41,8 @@
 #define PUMP2        18     // Pump right
 #define BNC_OUT2     15     // BNC output right
 
-#define POKE         17     // Nosepoke
-#define BEEPER       19     // Beeper
+#define POKE         19     // Nosepoke
+#define BEEPER       1     // Beeper
 
     
 void dateTime(uint16_t* date, uint16_t* time);
