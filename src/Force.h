@@ -31,16 +31,18 @@
 
 #define DOUT1        13     // Load cell1 left
 #define CLK1         12     // Load cell1 left
-#define LICKOMETER1  15     // Lick-o-meter Left
+#define LICK1        17     // Lick-o-meter Left
 #define PUMP1        4      // Pump left
+#define BNC_OUT1     14     // BNC output left
 
 #define DOUT2        11     // Load cell2 right
 #define CLK2         9      // Load cell2 right 
-#define LICKOMETER2  16     // Lick-o-meter Right
+#define LICK2        16     // Lick-o-meter Right
 #define PUMP2        18     // Pump right
+#define BNC_OUT2     15     // BNC output right
 
-#define POKE         17     // Nosepoke
-#define BEEPER       19     // Beeper
+#define POKE         19     // Nosepoke
+#define BEEPER       1     // Beeper
 
     
 void dateTime(uint16_t* date, uint16_t* time);
@@ -53,7 +55,7 @@ class Force {
             
     // --- Basic functions --- //
     void begin();
-    void run();
+    void run(bool log_data = false);
     void check_buttons();
     void readPoke();
     
