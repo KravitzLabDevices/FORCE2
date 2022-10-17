@@ -118,8 +118,11 @@ class Force {
     // --- Pump functions --- //
     float dispense_time = 0;
     int dispense_amount = 2000;
+    unsigned long last_dispense = 0;
     void DispenseLeft();
     void DispenseRight();
+    void prime_dispense();
+    void check_lastDispense();
 
     // --- Lever functions --- //
     int dispense_delay = 4;

@@ -65,6 +65,7 @@ void loop() {
   ////////////////////////////////////////////////////////////////
   force.readPoke();
   if (force.poke) {
+    force.run(true);
     trial_start = millis();
     force.Tone();
     trial_available = true;
@@ -88,7 +89,6 @@ void loop() {
       else {
         highp_counter = 0;
       }
-      delay(500);
       if (random(100) < prob_left) {
         force.Tone();
         force.DispenseLeft();
@@ -111,7 +111,6 @@ void loop() {
       else {
         highp_counter = 0;
       }
-      delay(500);
       if (random(100) < prob_right) {
         force.Tone();
         force.DispenseRight();
@@ -135,10 +134,10 @@ void loop() {
   //////////////////////////////////////////////////////////////
   ////   Finish trial and start inter-trial timeout         ////
   ///////////////////////////////////////////////////////////// 
-  if (trial_available) {
+  if (press) {
     press = false;
     trial_available = false;
     force.Timeout(trialTimeout);
-    force.Tone();
   }
+
 }
