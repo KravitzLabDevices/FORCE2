@@ -961,7 +961,7 @@ void Force::begin() {
 
 
 ////////////////////////////////////////////////////
-//Run function to updates things on every loop//////
+//t function to updates things on every loop//////
 ////////////////////////////////////////////////////
 void Force::run(bool log_data) {
   SenseLeft();
@@ -1095,8 +1095,8 @@ void Force::graphLegend() {
   tft.print(ratioLeft);
   
   //Print remaining trial window
-  if ((trial_length < trial_window) && (trial_length != 0)) {
-    tft.setCursor(45,30);
+  if (trial_available) {
+    tft.setCursor(60,50);
     tft.setTextColor(ST7735_WHITE);
     tft.print("Trial Available");
     //tft.print((trial_window - trial_length)/1000, 3);
@@ -1375,7 +1375,7 @@ void Force::Click() {
 void Force::DispenseLeft() {
   dispensing = true;
   trialLeft++;
-  Tone();
+  Tone(4000,200);
   float successTime = millis();
   while ((millis() - successTime) < (dispense_delay * 1000)){
     tft.setCursor(85, 44);
@@ -1413,7 +1413,7 @@ void Force::DispenseLeft() {
 void Force::DispenseRight() {
   dispensing = true;
   trialRight++;
-  Tone();
+  Tone(4000,200);
   float successTime = millis();
   while ((millis() - successTime) < (dispense_delay * 1000)){
     tft.setCursor(85, 44);
@@ -1535,7 +1535,7 @@ void Force::prime_dispense() {
 ////    Check last dispense    ////
 //////////////////////////////////
 void Force::check_lastDispense() {
-  if ((millis() - last_dispense) > 60*1000) {
+  if ((millis() - last_dispense) > 300*1000) {
     last_dispense = millis();
     prime_dispense();
   }

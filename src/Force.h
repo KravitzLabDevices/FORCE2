@@ -55,7 +55,7 @@ class Force {
             
     // --- Basic functions --- //
     void begin();
-    void run(bool log_data = false);
+    void run(bool log_data = true);
     void check_buttons();
     void readPoke();
     

@@ -27,9 +27,6 @@ int trial_counter = 0;                                 // Tracks how many pellet
 int highp_counter = 0;                                  // Tracks how many pokes in a row in high probability poke
 int trialTimeout = 5;                                   //timeout duration after each poke, set to 0 to remove the timeout
 int probs[5] = {10, 30, 50, 70, 90};                
-unsigned long trial_start = 0;
-unsigned long trial_length = 5000;
-bool trial_available = false;
 bool press = false;
 
 void setup() {
@@ -65,19 +62,19 @@ void loop() {
   ////////////////////////////////////////////////////////////////
   force.readPoke();
   if (force.poke) {
-    force.run(true);
-    trial_start = millis();
+    force.run();
+    force.trial_start = millis();
     force.Tone();
-    trial_available = true;
+    force.trial_available = true;
   }
     
-  while (((millis()-trial_start) < force.trial_window) && trial_available == true) {
+  while (((millis()-force.trial_start) < force.trial_window) && force.trial_available) {
     force.ratioLeft = prob_left;
     force.ratioRight = prob_right;
     force.trials_per_block = trial_counter;
     force.FRC = highp_counter;
     force.library_version = trialsToSwitch;
-    force.run(true);
+    force.run();
 
     /////////////////////////////////////////////////////////////
     ////          If mouse presses the left lever             ///
@@ -90,7 +87,6 @@ void loop() {
         highp_counter = 0;
       }
       if (random(100) < prob_left) {
-        force.Tone();
         force.DispenseLeft();
         trial_counter ++;
       }
@@ -98,7 +94,7 @@ void loop() {
         force.Tone(300,600);
       }
       press = true;
-      trial_available = false;
+      force.trial_available = false;
     }
 
     //////////////////////////////////////////////////////////////
@@ -112,7 +108,6 @@ void loop() {
         highp_counter = 0;
       }
       if (random(100) < prob_right) {
-        force.Tone();
         force.DispenseRight();
         trial_counter ++;
       }
@@ -120,15 +115,16 @@ void loop() {
         force.Tone(300,600);
       }
       press = true;
-      trial_available = false;
+      force.trial_available = false;
     }
   }
       
   //////////////////////////////////////////////////////////////
   ////     If there was no press during the time window     ////
   ///////////////////////////////////////////////////////////// 
-  if (trial_available && press == false) {
+  if (force.trial_available && press == false) {
     force.Tone(300,600);
+    force.trial_available = false;
   }
 
   //////////////////////////////////////////////////////////////
@@ -136,7 +132,7 @@ void loop() {
   ///////////////////////////////////////////////////////////// 
   if (press) {
     press = false;
-    trial_available = false;
+    force.trial_available = false;
     force.Timeout(trialTimeout);
   }
 
