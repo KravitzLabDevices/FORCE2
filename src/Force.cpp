@@ -961,7 +961,7 @@ void Force::begin() {
 
 
 ////////////////////////////////////////////////////
-//t function to updates things on every loop//////
+////  function to update things on every loop  /////
 ////////////////////////////////////////////////////
 void Force::run(bool log_data) {
   SenseLeft();
@@ -1391,7 +1391,7 @@ void Force::DispenseLeft() {
   }
   //digitalWrite(A2,HIGH); //A2 will be "reward dispensed" pin
   //digitalWrite(13,HIGH); // RED LED
-  for (int i=0; i < 20; i++) {
+  for (int i=0; i < 30; i++) {
     digitalWrite(PUMP1, HIGH);
     delayMicroseconds(100);
     digitalWrite(PUMP1, LOW);
@@ -1427,7 +1427,7 @@ void Force::DispenseRight() {
       tft.fillRect(12, 0, 38, 24, ST7735_BLACK); // clear the text after label
     }
   }
-  for (int i=0; i < 20; i++) {
+  for (int i=0; i < 30; i++) {
     digitalWrite(PUMP2, HIGH);
     delayMicroseconds(100);
     digitalWrite(PUMP2, LOW);
@@ -1517,18 +1517,13 @@ void Force::SenseRight() {
 /////////////////////////////
 
 void Force::prime_dispense() {
-  tft.setCursor(85, 44);
-  tft.setTextColor(ST7735_WHITE);
-  tft.print("Priming!");
-  pixels.show();
-  for (int i=0; i < 250; i++) {
+  for (int i=0; i < 100; i++) {
     digitalWrite(PUMP1, HIGH);
     digitalWrite(PUMP2, HIGH);
-    delayMicroseconds(20);
+    delayMicroseconds(100);
     digitalWrite(PUMP1, LOW);
     digitalWrite(PUMP2, LOW);
   }
-  tft.fillRect(84, 43, 80, 12, ST7735_BLACK);
 }
 
 ///////////////////////////////////
