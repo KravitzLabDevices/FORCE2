@@ -886,7 +886,7 @@ void Force::Calibrate(){
 /////     and set everything up                /////
 ////////////////////////////////////////////////////
 
-void Force::begin() {
+void Force::begin(bool log_lite) {
   Serial.begin(9600);
 
   if (!ss.begin()) {
@@ -954,7 +954,7 @@ void Force::begin() {
   // Initialize SD
   SdFile::dateTimeCallback(dateTime);
   CreateDataFile();
-  writeHeader();
+  writeHeader(log_lite);
 
 }
 
@@ -963,7 +963,7 @@ void Force::begin() {
 ////////////////////////////////////////////////////
 ////  function to update things on every loop  /////
 ////////////////////////////////////////////////////
-void Force::run(bool log_data) {
+void Force::run() {
   SenseLeft();
   SenseRight();
   UpdateDisplay();
@@ -971,7 +971,6 @@ void Force::run(bool log_data) {
   unixtime  = now.unixtime();
   check_buttons();
   check_lastDispense();
-  if (log_data == true) logdata();
 }
 
 
@@ -1076,7 +1075,7 @@ void Force::graphLegend() {
   if (gramsLeft > 1 or gramsRight >1){
     tft.fillRect(80, 5, 24, 12, ST7735_BLACK); // clear task data on each trial
   }
-  tft.print(trialLeft);
+  tft.print(rewardLeft);
 
   // Print trial right
   tft.setCursor(45,17);
@@ -1085,7 +1084,7 @@ void Force::graphLegend() {
   if (gramsLeft > 1 or gramsRight > 1){
     tft.fillRect(80, 17, 24, 12, ST7735_BLACK);
   }
-  tft.print(trialRight);
+  tft.print(rewardRight);
 
   // Print FR ratio
   tft.setCursor(110, 5);
@@ -1172,14 +1171,20 @@ void Force::CreateDataFile() {
 //////////////////////////////////////////////////
 /////     Write header to data file        ///////
 //////////////////////////////////////////////////
-void Force::writeHeader() {
-  logfile.println("MM:DD:YYYY hh:mm:ss, Seconds, Library_Version, Program, Device_Number, ProgressiveRatio, Grams_req, Hold_time, Ratio, Dispense_amount, Dispense_delay, Timeout, Trials_per_block, Max_force, TrialLeft, TrialRight, Press, Lever1_Grams, Lever2_Grams, LickLeft, LickRight, Dispense, Random_Num, Shock_trial");
+void Force::writeHeader(bool log_lite) {
+  if (log_lite == true) {
+    logfile.println("MM:DD:YYYY hh:mm:ss, Library_Version, Program, Device_Number, Dispense_amount, Dispense_delay, Timeout, Trials_per_block, Max_force, Trials_left, Trials_right, Left_rewarded, Right_rewarded");
+  }
+  else if (log_lite == false) {
+    logfile.println("MM:DD:YYYY hh:mm:ss, Seconds, Library_Version, Program, Device_Number, ProgressiveRatio, Grams_req, Hold_time, Ratio, Dispense_amount, Dispense_delay, Timeout, Trials_per_block, Max_force, TrialLeft, TrialRight, Press, Lever1_Grams, Lever2_Grams, LickLeft, LickRight, Dispense");
+  }
+  
 }
 
 //////////////////////////////////////////////////
 /////          Write data to file          ///////
 //////////////////////////////////////////////////
-void Force::WriteToSD() {
+void Force::logdata() {
   DateTime now = rtc.now();
   logfile.print(now.month());
   logfile.print("/");
@@ -1238,10 +1243,10 @@ void Force::WriteToSD() {
   logfile.print(max_force);
   logfile.print(",");
  
-  logfile.print(trialLeft);
+  logfile.print(rewardLeft);
   logfile.print(",");
   
-  logfile.print(trialRight);
+  logfile.print(rewardRight);
   logfile.print(",");
   
   logfile.print(pressesLeft);
@@ -1262,16 +1267,84 @@ void Force::WriteToSD() {
   logfile.print(dispensing);
   logfile.print(",");
 
-  logfile.print(random_number);
+  logfile.flush();
+
+  if ( ! logfile ) {
+    error(2);
+  }
+}
+
+void Force::logdata_lite() {
+  DateTime now = rtc.now();
+  logfile.print(now.month());
+  logfile.print("/");
+  logfile.print(now.day());
+  logfile.print("/");
+  logfile.print(now.year());
+  logfile.print(" ");
+  logfile.print(now.hour());
+  logfile.print(":");
+  if (now.minute() < 10)
+    logfile.print('0');      // Trick to add leading zero for formatting
+  logfile.print(now.minute());
+  logfile.print(":");
+  if (now.second() < 10)
+    logfile.print('0');      // Trick to add leading zero for formatting
+  logfile.print(now.second());
+  logfile.print(",");
+
+  logfile.print(ver); // Print library version
   logfile.print(",");
   
-  logfile.println(shock);
+  logfile.print(library_version); // Print code or program version
+  logfile.print(",");
+
+  logfile.print(FRC); // Print device name
+  logfile.print(",");
+  
+  logfile.print(dispense_amount);
+  logfile.print(",");
+  
+  logfile.print(dispense_delay);
+  logfile.print(",");
+  
+  logfile.print(timeout_length);
+  logfile.print(",");
+  
+  logfile.print(trials_per_block);
+  logfile.print(",");
+  
+  logfile.print(event);
+  logfile.print(",");
+
+  logfile.print(trials_left);
+  logfile.print(",");
+  
+  logfile.print(trials_right);
+  logfile.print(",");
+
+  logfile.print(rewardLeft);
+  logfile.print(",");
+
+  logfile.println(rewardRight);
 
   logfile.flush();
 
   if ( ! logfile ) {
     error(2);
   }
+}
+
+void Force::loglite_Left() {
+  event = "Left";
+  trials_left ++;
+  logdata_lite();
+}
+
+void Force::loglite_Right() {
+  event = "Right";
+  trials_right ++;
+  logdata_lite();
 }
 
 /********************************************************
@@ -1314,14 +1387,6 @@ void Force::getFilename(char *filename) {
   return;
 }
 
-////////////////////////////////////////
-/////          Log data          ///////
-////////////////////////////////////////
-
-void Force::logdata() {
-  WriteToSD();
-}
-
 
 /////////////////////////////////////////////////////////////////////////
 ///////                 Task functions                           ////////
@@ -1346,7 +1411,7 @@ void Force::Timeout(int timeout_length) {
     tft.setTextColor(ST7735_WHITE);
     tft.print("Timeout:");
     tft.print((-(millis() - dispense_time - (timeout_length*1000))/ 1000),1);
-    run(false);
+    run();
     tft.fillRect(84, 43, 80, 12, ST7735_BLACK);
     if ((gramsLeft > 1.5) or (gramsRight > 1.5)) { //reset timeout if either lever pushed
       Timeout(timeout_length); 
@@ -1374,7 +1439,7 @@ void Force::Click() {
 
 void Force::DispenseLeft() {
   dispensing = true;
-  trialLeft++;
+  rewardLeft ++;
   Tone(4000,200);
   float successTime = millis();
   while ((millis() - successTime) < (dispense_delay * 1000)){
@@ -1412,7 +1477,7 @@ void Force::DispenseLeft() {
 
 void Force::DispenseRight() {
   dispensing = true;
-  trialRight++;
+  rewardRight++;
   Tone(4000,200);
   float successTime = millis();
   while ((millis() - successTime) < (dispense_delay * 1000)){

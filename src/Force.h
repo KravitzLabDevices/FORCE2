@@ -54,8 +54,8 @@ class Force {
     String library_version = "undef";
             
     // --- Basic functions --- //
-    void begin();
-    void run(bool log_data = true);
+    void begin(bool log_lite = true);
+    void run();
     void check_buttons();
     void readPoke();
     
@@ -107,12 +107,17 @@ class Force {
     char filename[21];          // Array for file name data logged to named in setup
     const int chipSelect = 10;
     void CreateDataFile();
-    void writeHeader();
-    void WriteToSD();
+    void writeHeader(bool log_lite = true);
     void error(uint8_t errno);
     void getFilename(char *filename);
     void logdata();
+    void logdata_lite();
+    void loglite_Left();
+    void loglite_Right();
     unsigned long unixtime = 0;
+    
+    bool log_lite = true;
+    bool dispensing = true;
 
 
     // --- Pump functions --- //
@@ -123,6 +128,7 @@ class Force {
     void DispenseRight();
     void prime_dispense();
     void check_lastDispense();
+
 
     // --- Lever functions --- //
     int dispense_delay = 4;
@@ -155,13 +161,15 @@ class Force {
     int reqLeft = 2;    
     int ratioLeft = 1;
     int hold_timeLeft = 350;
-    int trialLeft = 0;
+    int rewardLeft = 0;
+    int trials_left = 0;
             
     int pressesRight = 0;
     int reqRight = 2;
     int ratioRight = 1;
     int hold_timeRight = 350;
-    int trialRight = 0;
+    int rewardRight = 0;
+    int trials_right = 0;
             
     unsigned long pressStart = 0;    
     int trials_per_block = 10;
@@ -169,9 +177,8 @@ class Force {
     unsigned long start_time = 0;
     unsigned long lickTime = 0;
     unsigned long dispenseTime = 0;
-    int random_number = 0;
-    bool shock = false;
-    bool dispensing = false;
+    
+    String event = "None";
     
     // --- Serial out--- //
     void SerialOutput();

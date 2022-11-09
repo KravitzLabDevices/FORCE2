@@ -30,8 +30,12 @@ int probs[5] = {10, 30, 50, 70, 90};
 bool press = false;
 
 void setup() {
-  force.begin();                                        //setup FORCE
+  force.log_lite = true;
+  force.begin(force.log_lite);                                        //setup FORCE
   force.trial_window = 60000;
+  force.ver = prob_left;
+  force.FRC = prob_right;
+  force.trials_per_block = trialsToSwitch;
 }
 
 void loop() {  
@@ -40,12 +44,14 @@ void loop() {
   // This is the non-stationary part of the task                      ///
   // meaning that probabilities change every trialsToSwitch trials    ///
   ///////////////////////////////////////////////////////////////////////
-  force.run(false);
+  force.run();
   if(trial_counter == trialsToSwitch) {
     highp_counter = 0;
     trial_counter = 0;
     prob_left = probs[random(0,5)];
     prob_right = 100-prob_left;
+    force.ver = prob_left;
+    force.FRC = prob_right;
   }
 
   else if (highp_counter == 8) {
@@ -53,6 +59,11 @@ void loop() {
     trial_counter = 0;
     prob_left = probs[random(0,5)];
     prob_right = 100-prob_left;
+    
+    force.ver = prob_left;
+    force.FRC = prob_right;
+    force.dispense_delay = highp_counter;
+    force.dispense_amount = trial_counter;
   }
 
   /////////////////////////////////////////////////////////////////
@@ -63,17 +74,14 @@ void loop() {
   force.readPoke();
   if (force.poke) {
     force.run();
+    force.event = "CENTER";
+    force.logdata_lite();
     force.trial_start = millis();
     force.Tone();
     force.trial_available = true;
   }
     
   while (((millis()-force.trial_start) < force.trial_window) && force.trial_available) {
-    force.ratioLeft = prob_left;
-    force.ratioRight = prob_right;
-    force.trials_per_block = trial_counter;
-    force.FRC = highp_counter;
-    force.library_version = trialsToSwitch;
     force.run();
 
     /////////////////////////////////////////////////////////////
@@ -86,9 +94,15 @@ void loop() {
       else {
         highp_counter = 0;
       }
+      force.dispense_delay = highp_counter;
+      force.loglite_Left();
+      
       if (random(100) < prob_left) {
+        force.event = "RewardLeft";
         force.DispenseLeft();
         trial_counter ++;
+        force.dispense_amount = trial_counter;
+        force.logdata_lite();
       }
       else {
         force.Tone(300,600);
@@ -107,9 +121,16 @@ void loop() {
       else {
         highp_counter = 0;
       }
+      force.dispense_delay = highp_counter;
+      force.loglite_Right();
+
       if (random(100) < prob_right) {
+        force.event = "RewardRight";
         force.DispenseRight();
         trial_counter ++;
+        force.dispense_amount = trial_counter;
+        force.logdata_lite();
+        
       }
       else {
         force.Tone(300,600);
