@@ -154,7 +154,6 @@ class Force {
     int start_timer = 0;
     int trial_start = 0;
     int trial_window = 10000; // Time window between possible start of the trial and lever press
-    int trial_length = 0;
     bool trial_available = false;
     
     int pressesLeft = 0;
