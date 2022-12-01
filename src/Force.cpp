@@ -1456,10 +1456,11 @@ void Force::DispenseLeft() {
   }
   //digitalWrite(A2,HIGH); //A2 will be "reward dispensed" pin
   //digitalWrite(13,HIGH); // RED LED
-  for (int i=0; i < 30; i++) {
+  for (int i=0; i < 20; i++) {
     digitalWrite(PUMP1, HIGH);
-    delayMicroseconds(100);
+    delayMicroseconds(600);
     digitalWrite(PUMP1, LOW);
+    delayMicroseconds(200);
   }
   DateTime now = rtc.now();
   dispenseTime = now.unixtime();
@@ -1492,10 +1493,11 @@ void Force::DispenseRight() {
       tft.fillRect(12, 0, 38, 24, ST7735_BLACK); // clear the text after label
     }
   }
-  for (int i=0; i < 30; i++) {
+  for (int i=0; i < 20; i++) {
     digitalWrite(PUMP2, HIGH);
-    delayMicroseconds(100);
+    delayMicroseconds(600);
     digitalWrite(PUMP2, LOW);
+    delayMicroseconds(200);
   }
   DateTime now = rtc.now();
   dispenseTime = now.unixtime();
@@ -1582,12 +1584,17 @@ void Force::SenseRight() {
 /////////////////////////////
 
 void Force::prime_dispense() {
-  for (int i=0; i < 100; i++) {
+  for (int i=0; i < 20; i++) {
     digitalWrite(PUMP1, HIGH);
-    digitalWrite(PUMP2, HIGH);
-    delayMicroseconds(100);
+    delayMicroseconds(600);
     digitalWrite(PUMP1, LOW);
+    delayMicroseconds(200);
+  }
+  for (int i=0; i < 20; i++) {
+    digitalWrite(PUMP2, HIGH);
+    delayMicroseconds(600);
     digitalWrite(PUMP2, LOW);
+    delayMicroseconds(200);
   }
 }
 

@@ -20,8 +20,8 @@
 String ver = "Force";                                  //unique identifier text
 Force force(ver);                                       //start FORCE object
 
-int prob_left = 70;                                     // Probability of pellet on the high-reward poke                                               
-int prob_right = 30;                                    // Probability of pellet on the low-reward poke
+int prob_left = 100;                                     // Probability of pellet on the high-reward poke                                               
+int prob_right = 100;                                    // Probability of pellet on the low-reward poke
 int trialsToSwitch = 20;                                // # of trials before probabilities on the pokes switch
 int trial_counter = 0;                                 // Tracks how many pellets have been obtained in this set of probabilities
 int highp_counter = 0;                                  // Tracks how many pokes in a row in high probability poke
@@ -62,7 +62,7 @@ void loop() {
     
     force.ver = prob_left;
     force.FRC = prob_right;
-    force.dispense_delay = highp_counter;
+    //force.dispense_delay = highp_counter;
     force.dispense_amount = trial_counter;
   }
 
@@ -94,7 +94,7 @@ void loop() {
       else {
         highp_counter = 0;
       }
-      force.dispense_delay = highp_counter;
+      //force.dispense_delay = highp_counter;
       force.loglite_Left();
       
       if (random(100) < prob_left) {
@@ -121,7 +121,7 @@ void loop() {
       else {
         highp_counter = 0;
       }
-      force.dispense_delay = highp_counter;
+      //force.dispense_delay = highp_counter;
       force.loglite_Right();
 
       if (random(100) < prob_right) {
