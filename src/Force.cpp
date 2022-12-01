@@ -1097,9 +1097,7 @@ void Force::graphLegend() {
   if (trial_available) {
     tft.setCursor(60,50);
     tft.setTextColor(ST7735_WHITE);
-    tft.print("Trial Available");
-    //tft.print((trial_window - trial_length)/1000, 3);
-    //tft.fillRect(90, 30, 100, 12, ST7735_BLACK);  
+    tft.print("Trial Available"); 
   } else {
     tft.fillRect(45, 30, 100, 12, ST7735_BLACK);  
   }
@@ -1464,8 +1462,6 @@ void Force::DispenseLeft() {
   }
   DateTime now = rtc.now();
   dispenseTime = now.unixtime();
-  //digitalWrite(A2, LOW);
-  //digitalWrite(13, LOW);
   pressTimeLeft = millis();
   pressLengthLeft = 0;
   dispensing = false;
@@ -1525,6 +1521,7 @@ void Force::SenseLeft() {
     pressLengthLeft = (millis() - pressTimeLeft);
   }
     
+  //Getting the data ready to send output through BNC
   outputValueLeft = map(gramsLeft, 0, 200, 0, 4095);
  
   if (outputValueLeft > 4000) outputValueLeft = 4000;
@@ -1539,7 +1536,7 @@ void Force::SenseLeft() {
   pixels.setPixelColor(0, pixels.Color(0, outputValueLeft / 100, outputValueRight / 100)); 
   pixels.show();
 
-  lickLeft = digitalRead(LICK1) == HIGH;
+  //lickLeft = digitalRead(LICK1) == HIGH;
   Tare();
 }
 
@@ -1575,9 +1572,18 @@ void Force::SenseRight() {
   pixels.setPixelColor(0, pixels.Color(0, outputValueLeft / 100, outputValueRight / 100)); 
   pixels.show();
 
-  lickRight = digitalRead(LICK2) == HIGH;
+  //lickRight = digitalRead(LICK2) == HIGH;
   Tare();
 }
+
+//////////////////////////////
+////      Check licks     ////
+/////////////////////////////
+void Force::checkLicks() {
+ lickLeft = digitalRead(LICK1) == HIGH;
+ lickLeft = digitalRead(LICK2) == HIGH;
+}
+
 
 //////////////////////////////
 ////    Prime dispense    ////
