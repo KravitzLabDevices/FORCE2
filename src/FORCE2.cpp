@@ -1,5 +1,5 @@
 #include "Arduino.h"
-#include "Force.h"
+#include "FORCE2.h"
 
 //SETUP QSPI FLASH
 Adafruit_FlashTransport_QSPI flashTransport;
@@ -1595,6 +1595,9 @@ void Force::prime_dispense() {
     delayMicroseconds(600);
     digitalWrite(PUMP1, LOW);
     delayMicroseconds(200);
+  
+  delay(10);
+  
   }
   for (int i=0; i < 20; i++) {
     digitalWrite(PUMP2, HIGH);

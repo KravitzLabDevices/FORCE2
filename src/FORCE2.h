@@ -128,6 +128,7 @@ class Force {
     void DispenseRight();
     void prime_dispense();
     void check_lastDispense();
+    void checkLicks();
 
 
     // --- Lever functions --- //

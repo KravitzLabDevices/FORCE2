@@ -16,7 +16,7 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //                                        DON'T EDIT THESE LINES
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-#include <Force.h>                                      //Include FORCE library 
+#include <FORCE2.h>                                      //Include FORCE library 
 String ver = "Force";                                  //unique identifier text
 Force force(ver);                                       //start FORCE object
 
