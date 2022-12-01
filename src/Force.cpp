@@ -8,15 +8,20 @@ FatFileSystem fatfs;
 File myFile;
 
 /////////////////////////////////////////////////////////////////////////
-// Initialize FORCE!
+//////////////// Initialize FORCE!                             //////////
 /////////////////////////////////////////////////////////////////////////
 Force::Force(String ver) {
   library_version = ver; 
 }
 
-/////////////////////////////////////////////////////////////////////////
-// RTC Functions 
-/////////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////////
+///////////////                 Setup functions               ////////////
+//////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////
+//////   RTC Function    ///////
+////////////////////////////////
 RTC_PCF8523 rtc;
 
 void dateTime(uint16_t* date, uint16_t* time) {
@@ -28,9 +33,9 @@ void dateTime(uint16_t* date, uint16_t* time) {
   *time = FAT_TIME(now.hour(), now.minute(), now.second());
 }
 
-/////////////////////////////////////////////////////////////////////////
-// Load from settings.txt on SPI flash
-/////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////
+////Load from settings.txt on SPI flash     //////
+//////////////////////////////////////////////////
 void Force::load_settings() {
   Serial.println("*****************************");
   Serial.println("Loading device Settings:");
@@ -72,9 +77,9 @@ void Force::load_settings() {
 }
 
 
-/////////////////////////////////////////////////////////////////////////
-// Save to settings.txt on SPI flash
-/////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////
+////Save settings.txt on SPI flash     ///////////
+//////////////////////////////////////////////////
 void Force::save_settings() {
   for (int i = 0; i < 18; i++) Serial.print(settings[i]);
   Serial.println("*****************************");
@@ -135,9 +140,9 @@ void Force::save_settings() {
   }
 }
 
-/////////////////////////////////////////////////////////////////////////
-// reset settings
-/////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////
+////////         Reset settings        ///////////
+//////////////////////////////////////////////////
 void Force::reset_settings() {
   Serial.println("*****************************");
   Serial.println("Reseting device settings:");
@@ -162,610 +167,15 @@ void Force::reset_settings() {
 }
 
 /////////////////////////////////////////////////////////////////////////
-// print settings
+///////////               FORCE Menu Functions                 //////////
 /////////////////////////////////////////////////////////////////////////
-void Force::print_settings() {
-  Serial.println("*****************************");
-  Serial.println("Printing local device settings:");
-  Serial.print("Device#: "); Serial.println(FRC);
-  Serial.print("Trial window: "); Serial.println(trial_window);
-  Serial.print("Left Active: "); Serial.println(LeftActive);
-  Serial.print("Right Active: "); Serial.println(RightActive);
-  Serial.print("Req_Left: "); Serial.println(reqLeft);
-  Serial.print("Req_Right: "); Serial.println(reqRight);
-  Serial.print("hold_time_Left: "); Serial.println(hold_timeLeft);
-  Serial.print("hold_time_Right: "); Serial.println(hold_timeRight);
-  Serial.print("ratio_Left: "); Serial.println(ratioLeft);
-  Serial.print("ratio_Right: "); Serial.println(ratioRight);\
-  Serial.print("dispense_delay: "); Serial.println(dispense_delay);
-  Serial.print("dispense_amount: "); Serial.println(dispense_amount);
-  Serial.print("timeout_length: ");  Serial.println(timeout_length);
-  Serial.print("calibration_factor_Left: "); Serial.println(calibration_factor_Left);
-  Serial.print("calibration_factor_Right: "); Serial.println(calibration_factor_Right); 
-  if (PR==0) Serial.println("Fixed Ratio: Inactive");
-  if (PR==1) Serial.println("Prog Ratio: Active");
-  Serial.print ("Trials per block: "); Serial.println(trials_per_block);
-  Serial.print ("Max force: "); Serial.println(max_force);
-  Serial.println(" ");
-  
-  Serial.print("Reading from SPI flash...");
-  myFile = fatfs.open("settings.txt");
-  if (myFile) {
-    Serial.println("reading contents of settings.txt...");
-    // read from the file until there's nothing else in it:
-    while (myFile.available()) {
-      Serial.write(myFile.read());
-    }
-    // close the file:
-    myFile.close();
-    Serial.println("done.");
-  }
-}
 
+//////////////////////////////////////////////////
+////////          Menu Setup           ///////////
+//////////////////////////////////////////////////
 
-/////////////////////////////////////////////////////////////////////////
-// Begin
-/////////////////////////////////////////////////////////////////////////
-void Force::begin() {
-  Serial.begin(9600);
-
-  if (!ss.begin()) {
-    Serial.println("seesaw couldn't be found!");
-    while (1);
-  }
-
-  // Initialize pins
-  pinMode(A0, OUTPUT);
-  pinMode(BEEPER, OUTPUT);
-  pinMode(POKE, INPUT);
-  
-  pinMode(LICK1, INPUT_PULLDOWN);
-  pinMode(PUMP1, OUTPUT);
-  digitalWrite(PUMP1, LOW);
-  
-  pinMode(LICK2, INPUT_PULLDOWN);
-  pinMode(PUMP2, OUTPUT) ;
-  digitalWrite(PUMP2, LOW); 
-
-  // Initialize display
-  ss.tftReset();                  // Reset the display
-  ss.setBacklight(1);             // Adjust backlight (this doesn't really seem to work unless you do -1 to turn it off)
-  tft.initR(INITR_MINI160x80);    // Initialize a ST7735S chip, mini display
-  tft.setRotation(1);
-  tft.fillScreen(ST77XX_BLACK);
-
-  // Initialize RTC
-  if (!rtc.initialized() || rtc.lostPower()) {
-    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
-  }
-
-  rtc.start();
-
-  // Initialize neopixel
-  pixels.begin();
-
-  //start SPI flash
-  Serial.print("flash begin...");
-  flash.begin();
-  // Open file system on the flash
-  if ( !fatfs.begin(&flash) ) {
-    Serial.println("Error: filesystem is not existed. Please try SdFat_format example to make one.");
-    while (1) yield();
-  }
-  Serial.println("done.");
-
-  load_settings();
-
-  // Initialize load cells
-  analogWriteResolution(12);  // turn on 12 bit resolution
-  
-  scaleLeft.begin(DOUT1, CLK1);
-  scaleLeft.tare();
-  scaleLeft.set_scale(calibration_factor_Left);
-  
-  scaleRight.begin(DOUT2, CLK2);
-  scaleRight.tare();
-  scaleRight.set_scale(calibration_factor_Right);  
-
-  //start up menu
-  start_up_menu();
-  tft.fillScreen(ST77XX_BLACK);
-
-  // Initialize SD
-  SdFile::dateTimeCallback(dateTime);
-  CreateDataFile();
-  writeHeader();
-
-}
-
-
-
-/////////////////////////////////////////////////////////////////////////
-//Run function to updates things on every loop///////////////////////////
-/////////////////////////////////////////////////////////////////////////
-void Force::run(bool log_data) {
-  SenseLeft();
-  SenseRight();
-  UpdateDisplay();
-  DateTime now = rtc.now();
-  unixtime  = now.unixtime();
-  check_buttons();
-  if (log_data == true) logdata();
-}
-  
-
-
-/////////////////////////////////////////////////////////////////////////
-// Buttons Functions 
-/////////////////////////////////////////////////////////////////////////
-void Force::check_buttons() {
-  uint32_t buttons = ss.readButtons();
-    
-  if (! (buttons & TFTWING_BUTTON_A)) {
-    pixels.setPixelColor(0, pixels.Color(0, 0, 50)); //Light Neopixel blue
-    pixels.show();
-  }
-  
- if ((! (buttons & TFTWING_BUTTON_A)) and ! (buttons & TFTWING_BUTTON_B)){
-    delay (1000);
-    uint32_t buttons = ss.readButtons();
-    if ((! (buttons & TFTWING_BUTTON_A)) and ! (buttons & TFTWING_BUTTON_B)){
-      pixels.setPixelColor(0, pixels.Color(50, 0, 0)); //Light Neopixel red
-      tft.fillScreen(ST77XX_BLACK);
-      tft.setCursor(40, 35);  
-      tft.setTextColor(ST7735_WHITE);
-      tft.println("Pump flush");   
-      pixels.show();
-      digitalWrite(PUMP1, HIGH);
-      digitalWrite(PUMP2, HIGH);
-      tft.setCursor(40, 50);  
-      tft.print("500");
-      delay (100);
-      tft.print("400");
-      delay (100);
-      tft.print("300");
-      delay (100);
-      tft.print("200");
-      delay (100);
-      tft.print("1");
-      delay (100);
-      digitalWrite(PUMP1, LOW);
-      digitalWrite(PUMP2, LOW);
-      tft.fillScreen(ST77XX_BLACK);
-    }
-  }
-}
-
-
-/////////////////////////////////////////////////////////////////////////
-// Logging Functions 
-/////////////////////////////////////////////////////////////////////////
-void Force::CreateDataFile() {
-  //put this next line *Right Before* any file open line:
-  SdFile::dateTimeCallback(dateTime);
-
-  // see if the card is present and can be initialized:
-  if (!SD.begin(chipSelect, SD_SCK_MHZ(4))) {
-     error(1);
-  }
-
-  // Name filename in format F###_MMDDYYNN, where MM is month, DD is day, YY is year, and NN is an incrementing number for the number of files initialized each day
-  strcpy(filename, "FRC_____________.CSV");  // placeholder filename
-  getFilename(filename);
-
-  logfile = SD.open(filename, FILE_WRITE);
-  if ( ! logfile ) {
-    Serial.println("SD Create error");
-    error(2);
-  }
-}
-
-// Write data header to file of uSD.
-void Force::writeHeader() {
-  logfile.println("MM:DD:YYYY hh:mm:ss, Seconds, Library_Version, Program, Device_Number, ProgressiveRatio, Grams_req, Hold_time, Ratio, Dispense_amount, Dispense_delay, Timeout, Trials_per_block, Max_force, TrialLeft, TrialRight, Press, Lever1_Grams, Lever2_Grams, LickLeft, LickRight, Dispense, Random_Num, Shock_trial");
-}
-
-// Print data and time followed by pellet count and motorturns to SD card
-void Force::WriteToSD() {
-  DateTime now = rtc.now();
-  logfile.print(now.month());
-  logfile.print("/");
-  logfile.print(now.day());
-  logfile.print("/");
-  logfile.print(now.year());
-  logfile.print(" ");
-  logfile.print(now.hour());
-  logfile.print(":");
-  if (now.minute() < 10)
-    logfile.print('0');      // Trick to add leading zero for formatting
-  logfile.print(now.minute());
-  logfile.print(":");
-  if (now.second() < 10)
-    logfile.print('0');      // Trick to add leading zero for formatting
-  logfile.print(now.second());
-  logfile.print(",");
-  
-  logfile.print((millis()-start_time)/1000.0000); //print seconds since start
-  logfile.print(",");
-
-  logfile.print(ver); // Print library version
-  logfile.print(",");
-  
-  logfile.print(library_version); // Print code or program version
-  logfile.print(",");
-
-  logfile.print(FRC); // Print device name
-  logfile.print(",");
-  
-  if (PR==1) logfile.print("true"); // Print 
-  if (PR==0) logfile.print("false"); // Print 
-  logfile.print(",");
-  
-  logfile.print(reqLeft); // Print for requirement
-  logfile.print(",");
-  
-  logfile.print(hold_timeLeft); 
-  logfile.print(",");
-  
-  logfile.print(ratioLeft);
-  logfile.print(",");
-  
-  logfile.print(dispense_amount);
-  logfile.print(",");
-  
-  logfile.print(dispense_delay);
-  logfile.print(",");
-  
-  logfile.print(timeout_length);
-  logfile.print(",");
-  
-  logfile.print(trials_per_block);
-  logfile.print(",");
-  
-  logfile.print(max_force);
-  logfile.print(",");
- 
-  logfile.print(trialLeft);
-  logfile.print(",");
-  
-  logfile.print(trialRight);
-  logfile.print(",");
-  
-  logfile.print(pressesLeft);
-  logfile.print(",");
-  
-  logfile.print(gramsLeft);
-  logfile.print(",");
-  
-  logfile.print(gramsRight);
-  logfile.print(",");
-  
-  logfile.print(lickLeft);
-  logfile.print(",");
-  
-  logfile.print(lickRight);
-  logfile.print(",");
-
-  logfile.print(dispensing);
-  logfile.print(",");
-
-  logfile.print(random_number);
-  logfile.print(",");
-  
-  logfile.println(shock);
-
-  logfile.flush();
-
-  if ( ! logfile ) {
-    error(2);
-  }
-}
-
-/********************************************************
-  If any errors are detected with the SD card print on the screen
-********************************************************/
-void Force::error(uint8_t errno) {
-  tft.setCursor(5, 48);
-  tft.print("Check SD card");
-}
-
-/********************************************************
-  This function creates a unique filename for each file that
-  starts with "FRC", then the date in MMDDYY,
-  then an incrementing number for each new file created on the same date
-********************************************************/
-void Force::getFilename(char *filename) {
-  DateTime now = rtc.now();
-
-  filename[3] = FRC / 100 + '0';
-  filename[4] = FRC / 10 + '0';
-  filename[5] = FRC % 10 + '0';
-  filename[7] = now.month() / 10 + '0';
-  filename[8] = now.month() % 10 + '0';
-  filename[9] = now.day() / 10 + '0';
-  filename[10] = now.day() % 10 + '0';
-  filename[11] = (now.year() - 2000) / 10 + '0';
-  filename[12] = (now.year() - 2000) % 10 + '0';
-  filename[16] = '.';
-  filename[17] = 'C';
-  filename[18] = 'S';
-  filename[19] = 'V';
-  for (uint8_t i = 0; i < 100; i++) {
-    filename[14] = '0' + i / 10;
-    filename[15] = '0' + i % 10;
-
-    if (! SD.exists(filename)) {
-      break;
-    }
-  }
-  return;
-}
-
-void Force::logdata() {
-  WriteToSD();
-}
-
-/////////////////////////////////////////////////////////////////////////
-// Display Functions 
-/////////////////////////////////////////////////////////////////////////
-void Force::UpdateDisplay(){
-  graphLegend();
-  graphData();
-  graphDateTime();
-}
-
-void Force::graphData() {
-  //Calculate datapoints to graph
-  lasty = y;
-  lasty2 = y2;
-  y = map(outputValueLeft, 0, 750, 0, divideLine);  //scale to the screen
-  if (y > divideLine) y = divideLine;
-  y2 = map(outputValueRight, 0, 750, 0, divideLine);  //scale to the screen
-  if (y2 > divideLine) y2 = divideLine;
-
-  // Clear display in front of graph
-  if (x == 0) {
-    tft.fillRect(x, 81 - divideLine, 6, divideLine, ST7735_BLACK); //To remove the first bar
-    tft.fillRect(0, 0, 160, divideLine, ST7735_BLACK); //To remove the first bar
-  }
-  tft.drawLine(x + 7, 78, x + 7, 25, ST7735_RED);
-  tft.fillRect(x + 1, 81 - divideLine, 6, divideLine, ST7735_BLACK);
-
-  //Graph data load cell 1:
-  tft.drawPixel(x + 1, 79 - y, ST7735_YELLOW);
-  tft.drawLine(x, 80 - lasty , x + 1, 80 - y, ST7735_MAGENTA);
-
-  //Graph data load cell 2:
-  tft.drawPixel(x + 1, 79 - y2, ST7735_WHITE);
-  tft.drawLine(x, 80 - lasty2 , x + 1, 80 - y2, ST7735_CYAN);
-
-  //reset graphing position to left side of screen
-  x++;
-  if (x == 160) x = 0;
-}
-
-void Force::graphDateTime() {
-  DateTime now = rtc.now();
-  tft.setTextColor(ST7735_WHITE);
-  tft.setCursor(85, 68);
-  if (now.month() < 10)
-    tft.print('0');      // Trick to add leading zero for formatting
-  tft.print(now.month(), DEC);
-  tft.print('/');
-  if (now.day() < 10)
-    tft.print('0');      // Trick to add leading zero for formatting
-  tft.print(now.day(), DEC);
-  tft.print(' ');
-  tft.print(now.hour(), DEC);
-  tft.print(':');
-  if (now.minute() < 10)
-    tft.print('0');      // Trick to add leading zero for formatting
-  tft.print(now.minute(), DEC);
-}
-
-void Force::graphLegend() {
-  // Print force output on F1 and F2
-  if (gramsLeft > 1 or gramsRight >1){ //only clear F1 ans F2 values if levers are being pushed
-    tft.fillRect(12, 0, 38, 24, ST7735_BLACK); // clear the text after label
-  }
-  tft.setCursor(0, 5);  
-  tft.setTextColor(ST7735_MAGENTA);
-  tft.print("F1: ");   
-  tft.println(gramsLeft,0);
-  tft.setCursor(0, 17); 
-  tft.setTextColor(ST7735_CYAN);
-  tft.print("F2: ");
-  tft.print(gramsRight,0);
- 
-  // Print force requirement
-  //tft.setCursor(45, 5);
-  //tft.setTextColor(ST7735_YELLOW);
-  //tft.print("Req: ");
-  //tft.print(reqLeft);
-  //tft.print("g");
-
-  // Print trial Left
-  tft.setCursor(45, 5);
-  tft.setTextColor(ST7735_YELLOW);
-  tft.print("Left:");
-  if (gramsLeft > 1 or gramsRight >1){
-    tft.fillRect(80, 5, 24, 12, ST7735_BLACK); // clear task data on each trial
-  }
-  tft.print(trialLeft);
-
-  // Print trial right
-  tft.setCursor(45,17);
-  tft.setTextColor(ST7735_YELLOW);
-  tft.print("Right:");
-  if (gramsLeft > 1 or gramsRight > 1){
-    tft.fillRect(80, 17, 24, 12, ST7735_BLACK);
-  }
-  tft.print(trialRight);
-
-  // Print FR ratio
-  tft.setCursor(110, 5);
-  tft.setTextColor(ST7735_YELLOW);
-  if (PR ==0) tft.print("FR:");
-  if (PR ==1) tft.print("PR:");
-  tft.print(ratioLeft);
-  
-  //Print remaining trial window
-  if ((trial_length < trial_window) && (trial_length != 0)) {
-    tft.setCursor(45,30);
-    tft.setTextColor(ST7735_WHITE);
-    tft.print("Trial Available");
-    //tft.print((trial_window - trial_length)/1000, 3);
-    //tft.fillRect(90, 30, 100, 12, ST7735_BLACK);  
-  } else {
-    tft.fillRect(45, 30, 100, 12, ST7735_BLACK);  
-  }
-  
-  
-
-
-  // Print current press
-  /*tft.setCursor(110, 17);
-  tft.setTextColor(ST7735_YELLOW);
-  tft.print("Press:");
-  if (gramsLeft > 1 or gramsRight >1){
-    tft.fillRect(143, 17, 28, 12, ST7735_BLACK); // clear press data on each trial
-  }
-  */tft.print(pressesLeft);
-
-  //Indicate licks
-  tft.fillRect(0, 27, 40, 12, ST7735_BLACK); // clear the text after label
-  if (lickLeft == true) {
-    tft.setTextColor(ST7735_WHITE);
-    tft.setCursor(0, 28);
-    tft.print ("Lick left");
-    digitalWrite(A3, HIGH);  //CHECK THIS, MIGHT NOT BE THE RIGHT PIN
-    DateTime now = rtc.now();
-    lickTime = now.unixtime();
-  }
-
-  if (lickLeft == false) {
-    digitalWrite(A3, LOW); //CHECK THIS, MIGHT NOT BE THE RIGHT PIN
-
-  }
-  
-  if (lickRight == true) {
-    tft.setTextColor(ST7735_WHITE);
-    tft.setCursor(0, 28);
-    tft.print ("Lick right");
-    digitalWrite(A3, HIGH);  //THIS IS DEFINITELY NOT RIGHT PIN!
-    DateTime now = rtc.now();
-    lickTime = now.unixtime();
-  }
-
-  if (lickRight == false) {
-    digitalWrite(A3, LOW); //THIS IS DEFINITELY NOT RIGHT PIN!
-
-  }
-  
-  if (calibrated == false){
-    tft.setCursor(85, 56);
-    tft.print ("Uncalibrated");
-  }
-}
-
-
-/////////////////////////////////////////////////////////////////////////
-// Calibration function
-/////////////////////////////////////////////////////////////////////////
-void Force::Tare() {
-  if (millis() - start_timer > 5000)  {
-    if (scaleChangeLeft < 1000) {  // this sets sensitivity for delaying taring
-      pixels.setPixelColor(0, pixels.Color(0, 10, 10));
-      pixels.show();
-      scaleLeft.tare();
-    }
-    if (scaleChangeRight < 1000) {
-      pixels.setPixelColor(0, pixels.Color(10, 10, 0));
-      pixels.show();
-      scaleRight.tare();
-    }
-    start_timer = millis();
-    scaleChangeLeft  = 0;
-    scaleChangeRight  = 0;
-  }
-}
-
-void Force::Calibrate(){
-  bool lever1 = true;
-  tft.fillScreen(ST77XX_BLACK);
-  scaleLeft.tare();
-  scaleRight.tare();
-  while (calibrate_active==true){
-    uint32_t buttons = ss.readButtons();
-    if (! (buttons & TFTWING_BUTTON_A)) lever1 = true;
-    if (! (buttons & TFTWING_BUTTON_B)) lever1 = false;
-    
-    float calibrate_timer = millis();
-    tft.setCursor(40, 15);  
-    tft.setTextColor(ST7735_WHITE);
-    tft.println("Calibrate levers:");   
-    gramsLeft = (scaleLeft.get_units());
-    gramsRight = (scaleRight.get_units());
-    tft.setCursor(40, 30);  
-    tft.print("Lever Left:");   
-    tft.println(gramsLeft,1);   
-    tft.setCursor(40, 45);  
-    tft.print("Lever Right:");   
-    tft.println(gramsRight,1);   
-    delay (100);
-    if (lever1 == true){
-        tft.fillRect(0, 30, 160, 12, ST7735_BLUE); // highlight active bar
-        tft.fillRect(0, 43, 160, 12, ST7735_BLACK); // highlight active bar
-
-        if (! (buttons & TFTWING_BUTTON_UP)) { 
-          calibration_factor_Left += 100;
-          scaleLeft.set_scale(calibration_factor_Left);
-        }
-        
-        if (! (buttons & TFTWING_BUTTON_DOWN)) { 
-          calibration_factor_Left -= 100;
-          scaleLeft.set_scale(calibration_factor_Left);
-        }
-    }
-    
-    if (lever1 == false){
-        tft.fillRect(0, 30, 160, 12, ST7735_BLACK); // highlight active bar
-        tft.fillRect(0, 43, 160, 12, ST7735_BLUE); // highlight active bar
-        if (! (buttons & TFTWING_BUTTON_UP)) { 
-          calibration_factor_Right += 100;
-          scaleRight.set_scale(calibration_factor_Right);
-        }
-        
-        if (! (buttons & TFTWING_BUTTON_DOWN)) { 
-          calibration_factor_Right -= 100;
-          scaleRight.set_scale(calibration_factor_Right);
-        }
-    }
-
-    if (! (buttons & TFTWING_BUTTON_SELECT)) {
-      Click();
-      start_timer = millis();
-      tft.fillScreen(ST77XX_BLACK);
-      tft.setCursor(40, 15);  
-      tft.println("Remove weights");
-      calibrated = true;
-      delay (2000);
-      tft.fillScreen(ST77XX_BLACK);
-      tft.setCursor(40, 15);  
-      tft.println("Calibrated!");
-      delay (1000);
-      start_up_menu();
-    }
-  }
-}
-
-
-/////////////////////////////////////////////////////////////////////////
-// FORCE menu
-/////////////////////////////////////////////////////////////////////////
 void Force::start_up_menu() {
   calibrate_active = false;
-  print_settings();
   float start_timer = millis();
   int option = 0;
   tft.fillScreen(ST77XX_BLACK);
@@ -923,7 +333,6 @@ void Force::start_up_menu() {
         tft.fillRect(0, (option * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
         delay (150);
         save_settings();
-        print_settings();
       }
 
       //button down
@@ -940,7 +349,6 @@ void Force::start_up_menu() {
           tft.fillRect(0, ((option - 6) * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
         }
         save_settings();
-        print_settings();
       }
 
       //button select
@@ -953,7 +361,6 @@ void Force::start_up_menu() {
             tft.setCursor(40, 35);
             tft.setTextColor(ST7735_WHITE);
             save_settings();
-            print_settings();
             tft.println("Starting FORCE!");
             delay (250);
             start_time = millis();
@@ -968,7 +375,6 @@ void Force::start_up_menu() {
     //////////////////////////////////////////////
     tft.fillScreen(ST77XX_BLACK);
     tft.fillRect(0, ((option - 6) * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
-    print_settings();
     while (page == 2) {
       if ((millis() - start_timer) > 10000) start_up = false; //after 10 seconds of start up menu, start session
       uint32_t buttons = ss.readButtons();
@@ -1118,7 +524,6 @@ void Force::start_up_menu() {
           page = 1;
         }
         save_settings();
-        print_settings();
       }
 
       //button down
@@ -1137,7 +542,6 @@ void Force::start_up_menu() {
           page = 3;
         }
         save_settings();
-        print_settings();
       }
 
       //button select
@@ -1150,7 +554,6 @@ void Force::start_up_menu() {
             tft.setCursor(40, 35);
             tft.setTextColor(ST7735_WHITE);
             save_settings();
-            print_settings();
             tft.println("Starting FORCE!");
             delay (250);
             start_time = millis();
@@ -1165,7 +568,6 @@ void Force::start_up_menu() {
     //////////////////////////////////////////////
     tft.fillScreen(ST77XX_BLACK);
     tft.fillRect(0, ((option - 12) * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
-    print_settings();
     while (page == 3) {
       if ((millis() - start_timer) > 10000) start_up = false; //after 10 seconds of start up menu, start session
       uint32_t buttons = ss.readButtons();
@@ -1298,7 +700,6 @@ void Force::start_up_menu() {
           page = 2;
         }
         save_settings();
-        print_settings();
       }
       
       if (! (buttons & TFTWING_BUTTON_UP)) {
@@ -1317,7 +718,6 @@ void Force::start_up_menu() {
           page = 1;
         }
         save_settings();
-        print_settings();
       }
 
       //button select
@@ -1330,7 +730,6 @@ void Force::start_up_menu() {
             tft.setCursor(40, 35);
             tft.setTextColor(ST7735_WHITE);
             save_settings();
-            print_settings();
             tft.println("Starting FORCE!");
             delay (250);
             start_time = millis();
@@ -1343,17 +742,668 @@ void Force::start_up_menu() {
 }
 
 
+//////////////////////////////////////////////////
+/////  Check Buttons and Flush function   ////////
+//////////////////////////////////////////////////
+void Force::check_buttons() {
+  uint32_t buttons = ss.readButtons();
+    
+  if (! (buttons & TFTWING_BUTTON_A)) {
+    pixels.setPixelColor(0, pixels.Color(0, 0, 50)); //Light Neopixel blue
+    pixels.show();
+  }
+  
+ if ((! (buttons & TFTWING_BUTTON_A)) and ! (buttons & TFTWING_BUTTON_B)){
+    delay (1000);
+    uint32_t buttons = ss.readButtons();
+    if ((! (buttons & TFTWING_BUTTON_A)) and ! (buttons & TFTWING_BUTTON_B)){
+      pixels.setPixelColor(0, pixels.Color(50, 0, 0)); //Light Neopixel red
+      tft.fillScreen(ST77XX_BLACK);
+      tft.setCursor(40, 35);  
+      tft.setTextColor(ST7735_WHITE);
+      tft.println("Pump flush");   
+      pixels.show();
+      digitalWrite(PUMP1, HIGH);
+      digitalWrite(PUMP2, HIGH);
+      tft.setCursor(40, 50);  
+      tft.print("500");
+      delay (100);
+      tft.print("400");
+      delay (100);
+      tft.print("300");
+      delay (100);
+      tft.print("200");
+      delay (100);
+      tft.print("1");
+      delay (100);
+      digitalWrite(PUMP1, LOW);
+      digitalWrite(PUMP2, LOW);
+      tft.fillScreen(ST77XX_BLACK);
+    }
+  }
+}
+
+
+
+//////////////////////////////////////////////////////////////////////////
+///////////////             Cakibration Functions             ////////////
+//////////////////////////////////////////////////////////////////////////
+
+//////////////
+void Force::Tare() {
+  if (millis() - start_timer > 5000)  {
+    if (scaleChangeLeft < 1000) {  // this sets sensitivity for delaying taring
+      pixels.setPixelColor(0, pixels.Color(0, 10, 10));
+      pixels.show();
+      scaleLeft.tare();
+    }
+    if (scaleChangeRight < 1000) {
+      pixels.setPixelColor(0, pixels.Color(10, 10, 0));
+      pixels.show();
+      scaleRight.tare();
+    }
+    start_timer = millis();
+    scaleChangeLeft  = 0;
+    scaleChangeRight  = 0;
+  }
+}
+
+void Force::Calibrate(){
+  bool lever1 = true;
+  tft.fillScreen(ST77XX_BLACK);
+  scaleLeft.tare();
+  scaleRight.tare();
+  while (calibrate_active==true){
+    uint32_t buttons = ss.readButtons();
+    if (! (buttons & TFTWING_BUTTON_A)) lever1 = true;
+    if (! (buttons & TFTWING_BUTTON_B)) lever1 = false;
+    
+    float calibrate_timer = millis();
+    tft.setCursor(40, 15);  
+    tft.setTextColor(ST7735_WHITE);
+    tft.println("Calibrate levers:");   
+    gramsLeft = (scaleLeft.get_units());
+    gramsRight = (scaleRight.get_units());
+    tft.setCursor(40, 30);  
+    tft.print("Lever Left:");   
+    tft.println(gramsLeft,1);   
+    tft.setCursor(40, 45);  
+    tft.print("Lever Right:");   
+    tft.println(gramsRight,1);   
+    delay (100);
+    if (lever1 == true){
+        tft.fillRect(0, 30, 160, 12, ST7735_BLUE); // highlight active bar
+        tft.fillRect(0, 43, 160, 12, ST7735_BLACK); // highlight active bar
+
+        if (! (buttons & TFTWING_BUTTON_UP)) { 
+          calibration_factor_Left += 100;
+          scaleLeft.set_scale(calibration_factor_Left);
+        }
+        
+        if (! (buttons & TFTWING_BUTTON_DOWN)) { 
+          calibration_factor_Left -= 100;
+          scaleLeft.set_scale(calibration_factor_Left);
+        }
+    }
+    
+    if (lever1 == false){
+        tft.fillRect(0, 30, 160, 12, ST7735_BLACK); // highlight active bar
+        tft.fillRect(0, 43, 160, 12, ST7735_BLUE); // highlight active bar
+        if (! (buttons & TFTWING_BUTTON_UP)) { 
+          calibration_factor_Right += 100;
+          scaleRight.set_scale(calibration_factor_Right);
+        }
+        
+        if (! (buttons & TFTWING_BUTTON_DOWN)) { 
+          calibration_factor_Right -= 100;
+          scaleRight.set_scale(calibration_factor_Right);
+        }
+    }
+
+    if (! (buttons & TFTWING_BUTTON_SELECT)) {
+      Click();
+      start_timer = millis();
+      tft.fillScreen(ST77XX_BLACK);
+      tft.setCursor(40, 15);  
+      tft.println("Remove weights");
+      calibrated = true;
+      delay (2000);
+      tft.fillScreen(ST77XX_BLACK);
+      tft.setCursor(40, 15);  
+      tft.println("Calibrated!");
+      delay (1000);
+      start_up_menu();
+    }
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////
+///////////////           Initial setup Functions             ////////////
+//////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////
+/////     Runs once to initialize pins         /////
+/////     and set everything up                /////
+////////////////////////////////////////////////////
+
+void Force::begin(bool log_lite) {
+  Serial.begin(9600);
+
+  if (!ss.begin()) {
+    Serial.println("seesaw couldn't be found!");
+    while (1);
+  }
+
+  // Initialize pins
+  pinMode(A0, OUTPUT);
+  pinMode(BEEPER, OUTPUT);
+  pinMode(POKE, INPUT);
+  
+  pinMode(LICK1, INPUT_PULLDOWN);
+  pinMode(PUMP1, OUTPUT);
+  digitalWrite(PUMP1, LOW);
+  
+  pinMode(LICK2, INPUT_PULLDOWN);
+  pinMode(PUMP2, OUTPUT) ;
+  digitalWrite(PUMP2, LOW); 
+
+  // Initialize display
+  ss.tftReset();                  // Reset the display
+  ss.setBacklight(1);             // Adjust backlight (this doesn't really seem to work unless you do -1 to turn it off)
+  tft.initR(INITR_MINI160x80);    // Initialize a ST7735S chip, mini display
+  tft.setRotation(1);
+  tft.fillScreen(ST77XX_BLACK);
+
+  // Initialize RTC
+  if (!rtc.initialized() || rtc.lostPower()) {
+    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+  }
+
+  rtc.start();
+
+  // Initialize neopixel
+  pixels.begin();
+
+  //start SPI flash
+  Serial.print("flash begin...");
+  flash.begin();
+  // Open file system on the flash
+  if ( !fatfs.begin(&flash) ) {
+    Serial.println("Error: filesystem is not existed. Please try SdFat_format example to make one.");
+    while (1) yield();
+  }
+  Serial.println("done.");
+
+  load_settings();
+
+  // Initialize load cells
+  analogWriteResolution(12);  // turn on 12 bit resolution
+  
+  scaleLeft.begin(DOUT1, CLK1);
+  scaleLeft.tare();
+  scaleLeft.set_scale(calibration_factor_Left);
+  
+  scaleRight.begin(DOUT2, CLK2);
+  scaleRight.tare();
+  scaleRight.set_scale(calibration_factor_Right);  
+
+  //start up menu
+  start_up_menu();
+  tft.fillScreen(ST77XX_BLACK);
+
+  // Initialize SD
+  SdFile::dateTimeCallback(dateTime);
+  CreateDataFile();
+  writeHeader(log_lite);
+
+}
+
+
+
+////////////////////////////////////////////////////
+////  function to update things on every loop  /////
+////////////////////////////////////////////////////
+void Force::run() {
+  SenseLeft();
+  SenseRight();
+  UpdateDisplay();
+  DateTime now = rtc.now();
+  unixtime  = now.unixtime();
+  check_buttons();
+  check_lastDispense();
+}
+
+
+
 /////////////////////////////////////////////////////////////////////////
-/////////////////////////Poke functions ////////////////////////////////
+////////                 Display functions                     //////////
 /////////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////
+////////        Update display         ///////////
+//////////////////////////////////////////////////
+void Force::UpdateDisplay(){
+  graphLegend();
+  graphData();
+  graphDateTime();
+}
+
+//////////////////////////////////////////////////
+////////           Graph Data          ///////////
+//////////////////////////////////////////////////
+void Force::graphData() {
+  //Calculate datapoints to graph
+  lasty = y;
+  lasty2 = y2;
+  y = map(outputValueLeft, 0, 750, 0, divideLine);  //scale to the screen
+  if (y > divideLine) y = divideLine;
+  y2 = map(outputValueRight, 0, 750, 0, divideLine);  //scale to the screen
+  if (y2 > divideLine) y2 = divideLine;
+
+  // Clear display in front of graph
+  if (x == 0) {
+    tft.fillRect(x, 81 - divideLine, 6, divideLine, ST7735_BLACK); //To remove the first bar
+    tft.fillRect(0, 0, 160, divideLine, ST7735_BLACK); //To remove the first bar
+  }
+  tft.drawLine(x + 7, 78, x + 7, 25, ST7735_RED);
+  tft.fillRect(x + 1, 81 - divideLine, 6, divideLine, ST7735_BLACK);
+
+  //Graph data load cell 1:
+  tft.drawPixel(x + 1, 79 - y, ST7735_YELLOW);
+  tft.drawLine(x, 80 - lasty , x + 1, 80 - y, ST7735_MAGENTA);
+
+  //Graph data load cell 2:
+  tft.drawPixel(x + 1, 79 - y2, ST7735_WHITE);
+  tft.drawLine(x, 80 - lasty2 , x + 1, 80 - y2, ST7735_CYAN);
+
+  //reset graphing position to left side of screen
+  x++;
+  if (x == 160) x = 0;
+}
+
+//////////////////////////////////////////////////
+////////     Graph Date and time       ///////////
+//////////////////////////////////////////////////
+
+void Force::graphDateTime() {
+  DateTime now = rtc.now();
+  tft.setTextColor(ST7735_WHITE);
+  tft.setCursor(85, 68);
+  if (now.month() < 10)
+    tft.print('0');      // Trick to add leading zero for formatting
+  tft.print(now.month(), DEC);
+  tft.print('/');
+  if (now.day() < 10)
+    tft.print('0');      // Trick to add leading zero for formatting
+  tft.print(now.day(), DEC);
+  tft.print(' ');
+  tft.print(now.hour(), DEC);
+  tft.print(':');
+  if (now.minute() < 10)
+    tft.print('0');      // Trick to add leading zero for formatting
+  tft.print(now.minute(), DEC);
+}
+
+//////////////////////////////////////////////////
+////////         Graph Legend          ///////////
+//////////////////////////////////////////////////
+void Force::graphLegend() {
+  // Print force output on F1 and F2
+  if (gramsLeft > 1 or gramsRight >1){ //only clear F1 ans F2 values if levers are being pushed
+    tft.fillRect(12, 0, 38, 24, ST7735_BLACK); // clear the text after label
+  }
+  tft.setCursor(0, 5);  
+  tft.setTextColor(ST7735_MAGENTA);
+  tft.print("F1: ");   
+  tft.println(gramsLeft,0);
+  tft.setCursor(0, 17); 
+  tft.setTextColor(ST7735_CYAN);
+  tft.print("F2: ");
+  tft.print(gramsRight,0);
+ 
+  // Print force requirement
+  //tft.setCursor(45, 5);
+  //tft.setTextColor(ST7735_YELLOW);
+  //tft.print("Req: ");
+  //tft.print(reqLeft);
+  //tft.print("g");
+
+  // Print trial Left
+  tft.setCursor(45, 5);
+  tft.setTextColor(ST7735_YELLOW);
+  tft.print("Left:");
+  if (gramsLeft > 1 or gramsRight >1){
+    tft.fillRect(80, 5, 24, 12, ST7735_BLACK); // clear task data on each trial
+  }
+  tft.print(rewardLeft);
+
+  // Print trial right
+  tft.setCursor(45,17);
+  tft.setTextColor(ST7735_YELLOW);
+  tft.print("Right:");
+  if (gramsLeft > 1 or gramsRight > 1){
+    tft.fillRect(80, 17, 24, 12, ST7735_BLACK);
+  }
+  tft.print(rewardRight);
+
+  // Print FR ratio
+  tft.setCursor(110, 5);
+  tft.setTextColor(ST7735_YELLOW);
+  if (PR ==0) tft.print("FR:");
+  if (PR ==1) tft.print("PR:");
+  tft.print(ratioLeft);
+  
+  //Print remaining trial window
+  if (trial_available) {
+    tft.setCursor(60,50);
+    tft.setTextColor(ST7735_WHITE);
+    tft.print("Trial Available");
+    //tft.print((trial_window - trial_length)/1000, 3);
+    //tft.fillRect(90, 30, 100, 12, ST7735_BLACK);  
+  } else {
+    tft.fillRect(45, 30, 100, 12, ST7735_BLACK);  
+  }
+
+
+  //Indicate licks
+  tft.fillRect(0, 27, 40, 12, ST7735_BLACK); // clear the text after label
+  if (lickLeft == true) {
+    tft.setTextColor(ST7735_WHITE);
+    tft.setCursor(0, 28);
+    tft.print ("Lick left");
+    digitalWrite(A3, HIGH);  //CHECK THIS, MIGHT NOT BE THE RIGHT PIN
+    DateTime now = rtc.now();
+    lickTime = now.unixtime();
+  }
+
+  if (lickLeft == false) {
+    digitalWrite(A3, LOW); //CHECK THIS, MIGHT NOT BE THE RIGHT PIN
+
+  }
+  
+  if (lickRight == true) {
+    tft.setTextColor(ST7735_WHITE);
+    tft.setCursor(0, 28);
+    tft.print ("Lick right");
+    digitalWrite(A3, HIGH);  //THIS IS DEFINITELY NOT RIGHT PIN!
+    DateTime now = rtc.now();
+    lickTime = now.unixtime();
+  }
+
+  if (lickRight == false) {
+    digitalWrite(A3, LOW); //THIS IS DEFINITELY NOT RIGHT PIN!
+
+  }
+  
+  if (calibrated == false){
+    tft.setCursor(85, 56);
+    tft.print ("Uncalibrated");
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////
+////////                   Logging Functions                   //////////
+/////////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////
+////////      Create data file         ///////////
+//////////////////////////////////////////////////
+void Force::CreateDataFile() {
+  //put this next line *Right Before* any file open line:
+  SdFile::dateTimeCallback(dateTime);
+
+  // see if the card is present and can be initialized:
+  if (!SD.begin(chipSelect, SD_SCK_MHZ(4))) {
+     error(1);
+  }
+
+  // Name filename in format F###_MMDDYYNN, where MM is month, DD is day, YY is year, and NN is an incrementing number for the number of files initialized each day
+  strcpy(filename, "FRC_____________.CSV");  // placeholder filename
+  getFilename(filename);
+
+  logfile = SD.open(filename, FILE_WRITE);
+  if ( ! logfile ) {
+    Serial.println("SD Create error");
+    error(2);
+  }
+}
+
+//////////////////////////////////////////////////
+/////     Write header to data file        ///////
+//////////////////////////////////////////////////
+void Force::writeHeader(bool log_lite) {
+  if (log_lite == true) {
+    logfile.println("MM:DD:YYYY hh:mm:ss, Library_Version, Program, Device_Number, Dispense_amount, Dispense_delay, Timeout, Trials_per_block, Max_force, Trials_left, Trials_right, Left_rewarded, Right_rewarded");
+  }
+  else if (log_lite == false) {
+    logfile.println("MM:DD:YYYY hh:mm:ss, Seconds, Library_Version, Program, Device_Number, ProgressiveRatio, Grams_req, Hold_time, Ratio, Dispense_amount, Dispense_delay, Timeout, Trials_per_block, Max_force, TrialLeft, TrialRight, Press, Lever1_Grams, Lever2_Grams, LickLeft, LickRight, Dispense");
+  }
+  
+}
+
+//////////////////////////////////////////////////
+/////          Write data to file          ///////
+//////////////////////////////////////////////////
+void Force::logdata() {
+  DateTime now = rtc.now();
+  logfile.print(now.month());
+  logfile.print("/");
+  logfile.print(now.day());
+  logfile.print("/");
+  logfile.print(now.year());
+  logfile.print(" ");
+  logfile.print(now.hour());
+  logfile.print(":");
+  if (now.minute() < 10)
+    logfile.print('0');      // Trick to add leading zero for formatting
+  logfile.print(now.minute());
+  logfile.print(":");
+  if (now.second() < 10)
+    logfile.print('0');      // Trick to add leading zero for formatting
+  logfile.print(now.second());
+  logfile.print(",");
+  
+  logfile.print((millis()-start_time)/1000.0000); //print seconds since start
+  logfile.print(",");
+
+  logfile.print(ver); // Print library version
+  logfile.print(",");
+  
+  logfile.print(library_version); // Print code or program version
+  logfile.print(",");
+
+  logfile.print(FRC); // Print device name
+  logfile.print(",");
+  
+  if (PR==1) logfile.print("true"); // Print 
+  if (PR==0) logfile.print("false"); // Print 
+  logfile.print(",");
+  
+  logfile.print(reqLeft); // Print for requirement
+  logfile.print(",");
+  
+  logfile.print(hold_timeLeft); 
+  logfile.print(",");
+  
+  logfile.print(ratioLeft);
+  logfile.print(",");
+  
+  logfile.print(dispense_amount);
+  logfile.print(",");
+  
+  logfile.print(dispense_delay);
+  logfile.print(",");
+  
+  logfile.print(timeout_length);
+  logfile.print(",");
+  
+  logfile.print(trials_per_block);
+  logfile.print(",");
+  
+  logfile.print(max_force);
+  logfile.print(",");
+ 
+  logfile.print(rewardLeft);
+  logfile.print(",");
+  
+  logfile.print(rewardRight);
+  logfile.print(",");
+  
+  logfile.print(pressesLeft);
+  logfile.print(",");
+  
+  logfile.print(gramsLeft);
+  logfile.print(",");
+  
+  logfile.print(gramsRight);
+  logfile.print(",");
+  
+  logfile.print(lickLeft);
+  logfile.print(",");
+  
+  logfile.print(lickRight);
+  logfile.print(",");
+
+  logfile.print(dispensing);
+  logfile.print(",");
+
+  logfile.flush();
+
+  if ( ! logfile ) {
+    error(2);
+  }
+}
+
+void Force::logdata_lite() {
+  DateTime now = rtc.now();
+  logfile.print(now.month());
+  logfile.print("/");
+  logfile.print(now.day());
+  logfile.print("/");
+  logfile.print(now.year());
+  logfile.print(" ");
+  logfile.print(now.hour());
+  logfile.print(":");
+  if (now.minute() < 10)
+    logfile.print('0');      // Trick to add leading zero for formatting
+  logfile.print(now.minute());
+  logfile.print(":");
+  if (now.second() < 10)
+    logfile.print('0');      // Trick to add leading zero for formatting
+  logfile.print(now.second());
+  logfile.print(",");
+
+  logfile.print(ver); // Print library version
+  logfile.print(",");
+  
+  logfile.print(library_version); // Print code or program version
+  logfile.print(",");
+
+  logfile.print(FRC); // Print device name
+  logfile.print(",");
+  
+  logfile.print(dispense_amount);
+  logfile.print(",");
+  
+  logfile.print(dispense_delay);
+  logfile.print(",");
+  
+  logfile.print(timeout_length);
+  logfile.print(",");
+  
+  logfile.print(trials_per_block);
+  logfile.print(",");
+  
+  logfile.print(event);
+  logfile.print(",");
+
+  logfile.print(trials_left);
+  logfile.print(",");
+  
+  logfile.print(trials_right);
+  logfile.print(",");
+
+  logfile.print(rewardLeft);
+  logfile.print(",");
+
+  logfile.println(rewardRight);
+
+  logfile.flush();
+
+  if ( ! logfile ) {
+    error(2);
+  }
+}
+
+void Force::loglite_Left() {
+  event = "Left";
+  trials_left ++;
+  logdata_lite();
+}
+
+void Force::loglite_Right() {
+  event = "Right";
+  trials_right ++;
+  logdata_lite();
+}
+
+/********************************************************
+  If any errors are detected with the SD card print on the screen
+********************************************************/
+void Force::error(uint8_t errno) {
+  tft.setCursor(5, 48);
+  tft.print("Check SD card");
+}
+
+/********************************************************
+  This function creates a unique filename for each file that
+  starts with "FRC", then the date in MMDDYY,
+  then an incrementing number for each new file created on the same date
+********************************************************/
+void Force::getFilename(char *filename) {
+  DateTime now = rtc.now();
+
+  filename[3] = FRC / 100 + '0';
+  filename[4] = FRC / 10 + '0';
+  filename[5] = FRC % 10 + '0';
+  filename[7] = now.month() / 10 + '0';
+  filename[8] = now.month() % 10 + '0';
+  filename[9] = now.day() / 10 + '0';
+  filename[10] = now.day() % 10 + '0';
+  filename[11] = (now.year() - 2000) / 10 + '0';
+  filename[12] = (now.year() - 2000) % 10 + '0';
+  filename[16] = '.';
+  filename[17] = 'C';
+  filename[18] = 'S';
+  filename[19] = 'V';
+  for (uint8_t i = 0; i < 100; i++) {
+    filename[14] = '0' + i / 10;
+    filename[15] = '0' + i % 10;
+
+    if (! SD.exists(filename)) {
+      break;
+    }
+  }
+  return;
+}
+
+
+/////////////////////////////////////////////////////////////////////////
+///////                 Task functions                           ////////
+/////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////
+/////          Read Poke         ///////
+////////////////////////////////////////
 void Force::readPoke() {
   poke = digitalRead(POKE) == LOW;
 }
 
 
-/////////////////////////////////////////////////////////////////////////
-/////////////////////////Timeout function////////////////////////////////
-/////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////
+/////    Timeout function         //////
+////////////////////////////////////////
+
 void Force::Timeout(int timeout_length) {
   dispense_time = millis();
   while ((millis() - dispense_time) < (timeout_length * 1000)){
@@ -1361,7 +1411,7 @@ void Force::Timeout(int timeout_length) {
     tft.setTextColor(ST7735_WHITE);
     tft.print("Timeout:");
     tft.print((-(millis() - dispense_time - (timeout_length*1000))/ 1000),1);
-    run(false);
+    run();
     tft.fillRect(84, 43, 80, 12, ST7735_BLACK);
     if ((gramsLeft > 1.5) or (gramsRight > 1.5)) { //reset timeout if either lever pushed
       Timeout(timeout_length); 
@@ -1371,9 +1421,10 @@ void Force::Timeout(int timeout_length) {
   tft.fillRect(12, 0, 38, 24, ST7735_BLACK); // clear the text after F1 F2 labels
 }
 
-/////////////////////////////////////////////////////////////////////////
-// Sound Functions 
-/////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////
+/////      Sound functions        //////
+////////////////////////////////////////
 void Force::Tone(int frequency, int duration) {
   tone(BEEPER, frequency, duration);
 }
@@ -1388,8 +1439,8 @@ void Force::Click() {
 
 void Force::DispenseLeft() {
   dispensing = true;
-  trialLeft++;
-  Tone();
+  rewardLeft ++;
+  Tone(4000,200);
   float successTime = millis();
   while ((millis() - successTime) < (dispense_delay * 1000)){
     tft.setCursor(85, 44);
@@ -1407,8 +1458,9 @@ void Force::DispenseLeft() {
   //digitalWrite(13,HIGH); // RED LED
   for (int i=0; i < 20; i++) {
     digitalWrite(PUMP1, HIGH);
-    delayMicroseconds(100);
+    delayMicroseconds(600);
     digitalWrite(PUMP1, LOW);
+    delayMicroseconds(200);
   }
   DateTime now = rtc.now();
   dispenseTime = now.unixtime();
@@ -1417,6 +1469,7 @@ void Force::DispenseLeft() {
   pressTimeLeft = millis();
   pressLengthLeft = 0;
   dispensing = false;
+  last_dispense = millis();
 }
 
 ///////////////////////////
@@ -1425,8 +1478,8 @@ void Force::DispenseLeft() {
 
 void Force::DispenseRight() {
   dispensing = true;
-  trialRight++;
-  Tone();
+  rewardRight++;
+  Tone(4000,200);
   float successTime = millis();
   while ((millis() - successTime) < (dispense_delay * 1000)){
     tft.setCursor(85, 44);
@@ -1440,20 +1493,18 @@ void Force::DispenseRight() {
       tft.fillRect(12, 0, 38, 24, ST7735_BLACK); // clear the text after label
     }
   }
-  //digitalWrite(A2,HIGH); //A2 will be "reward dispensed" pin
-  //digitalWrite(13,HIGH); // RED LED
   for (int i=0; i < 20; i++) {
     digitalWrite(PUMP2, HIGH);
-    delayMicroseconds(100);
+    delayMicroseconds(600);
     digitalWrite(PUMP2, LOW);
+    delayMicroseconds(200);
   }
   DateTime now = rtc.now();
   dispenseTime = now.unixtime();
-  //digitalWrite(A2, LOW);
-  //digitalWrite(13, LOW);
   pressTimeRight = millis();
   pressLengthRight = 0;
   dispensing = false;
+  last_dispense = millis();
 }
 
 ///////////////////////////
@@ -1473,7 +1524,6 @@ void Force::SenseLeft() {
   if (gramsLeft > reqLeft) {
     pressLengthLeft = (millis() - pressTimeLeft);
   }
-  
     
   outputValueLeft = map(gramsLeft, 0, 200, 0, 4095);
  
@@ -1529,4 +1579,32 @@ void Force::SenseRight() {
   Tare();
 }
 
+//////////////////////////////
+////    Prime dispense    ////
+/////////////////////////////
+
+void Force::prime_dispense() {
+  for (int i=0; i < 20; i++) {
+    digitalWrite(PUMP1, HIGH);
+    delayMicroseconds(600);
+    digitalWrite(PUMP1, LOW);
+    delayMicroseconds(200);
+  }
+  for (int i=0; i < 20; i++) {
+    digitalWrite(PUMP2, HIGH);
+    delayMicroseconds(600);
+    digitalWrite(PUMP2, LOW);
+    delayMicroseconds(200);
+  }
+}
+
+///////////////////////////////////
+////    Check last dispense    ////
+//////////////////////////////////
+void Force::check_lastDispense() {
+  if ((millis() - last_dispense) > 300*1000) {
+    last_dispense = millis();
+    prime_dispense();
+  }
+}
 
