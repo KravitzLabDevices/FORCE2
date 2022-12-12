@@ -45,7 +45,7 @@ void Force::load_settings() {
     calibrated = true;
     Serial.println ("settings.txt found. Contents:");
     while (myFile.available()) {
-      for (int i = 0; i < 18; i++) {
+      for (int i = 0; i < 17; i++) {
         settings_recalled[i] = myFile.parseInt();
         Serial.println(settings_recalled[i]);
       }
@@ -70,8 +70,6 @@ void Force::load_settings() {
       calibration_factor_Right = settings_recalled[14];
       PR = settings_recalled[15];
       trials_per_block = settings_recalled[16];
-      max_force = settings_recalled[17];
-
     }
   }
 }
@@ -110,7 +108,6 @@ void Force::save_settings() {
   settings[14] = calibration_factor_Right;
   settings[15] = PR;
   settings[16] = trials_per_block;
-  settings[17] = max_force;
 
   //rewrite settings file
   myFile = fatfs.open("settings.txt", FILE_WRITE);
@@ -163,7 +160,6 @@ void Force::reset_settings() {
   calibration_factor_Right = -3300;
   PR = false;
   trials_per_block = 10;
-  max_force = 20;
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -640,26 +636,8 @@ void Force::start_up_menu() {
         }
       }
 
-      //option 15
-      tft.print("Max force:        ");
-      tft.print (max_force);
-      tft.println(" g");
-      if (option == 15) {
-        if (! (buttons & TFTWING_BUTTON_LEFT)) {
-          start_timer = millis();
-          delay (250);
-          max_force ++;
-          tft.fillRect(0, ((option - 12) * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
-        }
-        if (! (buttons & TFTWING_BUTTON_RIGHT)) {
-          start_timer = millis();
-          delay (250);
-          max_force--;
-          tft.fillRect(0, ((option - 12) * 8) + 19, 160, 9, ST7735_BLUE); // highlight active bar
-        }
-      }
 
-      //option 16
+      //option 15
       tft.setTextColor(ST7735_RED);
       tft.println("Calibrate FORCE");
       if (option == 16) {
@@ -673,7 +651,7 @@ void Force::start_up_menu() {
         }
       }
       
-      //option 17
+      //option 16
       tft.setTextColor(ST7735_RED);
       tft.println("Reset settings");
       if (option == 17) {
@@ -886,7 +864,7 @@ void Force::Calibrate(){
 /////     and set everything up                /////
 ////////////////////////////////////////////////////
 
-void Force::begin(bool log_lite) {
+void Force::begin() {
   Serial.begin(9600);
 
   if (!ss.begin()) {
@@ -953,8 +931,9 @@ void Force::begin(bool log_lite) {
 
   // Initialize SD
   SdFile::dateTimeCallback(dateTime);
-  CreateDataFile();
-  writeHeader(log_lite);
+  CreateDataFiles();
+  writeHeader();
+  writeHeaderLicks();
 
 }
 
@@ -966,6 +945,10 @@ void Force::begin(bool log_lite) {
 void Force::run() {
   SenseLeft();
   SenseRight();
+  if (log_lite != true) {
+    forceProfile();
+  }
+  checkLicks();
   UpdateDisplay();
   DateTime now = rtc.now();
   unixtime  = now.unixtime();
@@ -1105,32 +1088,27 @@ void Force::graphLegend() {
 
   //Indicate licks
   tft.fillRect(0, 27, 40, 12, ST7735_BLACK); // clear the text after label
-  if (lickLeft == true) {
+  if (lickLeft) {
     tft.setTextColor(ST7735_WHITE);
     tft.setCursor(0, 28);
     tft.print ("Lick left");
-    digitalWrite(A3, HIGH);  //CHECK THIS, MIGHT NOT BE THE RIGHT PIN
     DateTime now = rtc.now();
     lickTime = now.unixtime();
   }
 
   if (lickLeft == false) {
-    digitalWrite(A3, LOW); //CHECK THIS, MIGHT NOT BE THE RIGHT PIN
 
   }
   
-  if (lickRight == true) {
+  if (lickRight) {
     tft.setTextColor(ST7735_WHITE);
     tft.setCursor(0, 28);
     tft.print ("Lick right");
-    digitalWrite(A3, HIGH);  //THIS IS DEFINITELY NOT RIGHT PIN!
     DateTime now = rtc.now();
     lickTime = now.unixtime();
   }
 
   if (lickRight == false) {
-    digitalWrite(A3, LOW); //THIS IS DEFINITELY NOT RIGHT PIN!
-
   }
   
   if (calibrated == false){
@@ -1146,7 +1124,7 @@ void Force::graphLegend() {
 //////////////////////////////////////////////////
 ////////      Create data file         ///////////
 //////////////////////////////////////////////////
-void Force::CreateDataFile() {
+void Force::CreateDataFiles() {
   //put this next line *Right Before* any file open line:
   SdFile::dateTimeCallback(dateTime);
 
@@ -1157,32 +1135,83 @@ void Force::CreateDataFile() {
 
   // Name filename in format F###_MMDDYYNN, where MM is month, DD is day, YY is year, and NN is an incrementing number for the number of files initialized each day
   strcpy(filename, "FRC_____________.CSV");  // placeholder filename
+  strcpy(filenameLicks, "FRC______________licks.CSV");
   getFilename(filename);
+  getFilenameLicks(filenameLicks);
 
   logfile = SD.open(filename, FILE_WRITE);
   if ( ! logfile ) {
     Serial.println("SD Create error");
     error(2);
   }
+  
+  logfileLicks = SD.open(filenameLicks, FILE_WRITE);
+  if ( ! logfileLicks ) {
+    Serial.println("SD Create error");
+    error(2);
+    }
 }
 
 //////////////////////////////////////////////////
 /////     Write header to data file        ///////
 //////////////////////////////////////////////////
-void Force::writeHeader(bool log_lite) {
-  if (log_lite == true) {
-    logfile.println("MM:DD:YYYY hh:mm:ss, Library_Version, Program, Device_Number, Dispense_amount, Dispense_delay, Timeout, Trials_per_block, Max_force, Trials_left, Trials_right, Left_rewarded, Right_rewarded");
-  }
-  else if (log_lite == false) {
-    logfile.println("MM:DD:YYYY hh:mm:ss, Seconds, Library_Version, Program, Device_Number, ProgressiveRatio, Grams_req, Hold_time, Ratio, Dispense_amount, Dispense_delay, Timeout, Trials_per_block, Max_force, TrialLeft, TrialRight, Press, Lever1_Grams, Lever2_Grams, LickLeft, LickRight, Dispense");
-  }
+void Force::writeHeader() {
+  logfile.print("Library_Version");
+  logfile.print(",");
+  logfile.println(library_version);
+  logfile.print("Program");
+  logfile.print(",");
+  logfile.println(ver);
+  logfile.print("Device_Number");
+  logfile.print(",");
+  logfile.println(FRC);
+  logfile.print("Dispense_amount");
+  logfile.print(",");
+  logfile.println(dispense_amount);
+  logfile.print("Dispense_delay");
+  logfile.print(",");
+  logfile.println(dispense_delay);
+  logfile.print("Timeout");
+  logfile.print(",");
+  logfile.println(timeout_length);
   
+  logfile.println("MM:DD:YYYY hh:mm:ss, Trials_per_block, Event, Trials_left, Trials_right, Left_rewarded, Right_rewarded, Force_profile");
+  
+  logfile.close();
+}
+
+  
+
+void Force::writeHeaderLicks() {
+  logfileLicks.print("Library_Version");
+  logfileLicks.print(",");
+  logfileLicks.println(library_version);
+  logfileLicks.print("Program");
+  logfileLicks.print(",");
+  logfileLicks.println(ver);
+  logfileLicks.print("Device_Number");
+  logfileLicks.print(",");
+  logfileLicks.println(FRC);
+  logfileLicks.print("Dispense_amount");
+  logfileLicks.print(",");
+  logfileLicks.println(dispense_amount);
+  logfileLicks.print("Dispense_delay");
+  logfileLicks.print(",");
+  logfileLicks.println(dispense_delay);
+  logfileLicks.print("Timeout");
+  logfileLicks.print(",");
+  logfileLicks.println(timeout_length);
+  
+  logfileLicks.println("MM:DD:YYYY hh:mm:ss, lick_Left, lick_Right");
+  logfileLicks.close();
 }
 
 //////////////////////////////////////////////////
 /////          Write data to file          ///////
 //////////////////////////////////////////////////
 void Force::logdata() {
+  logfile = SD.open(filename, FILE_WRITE);
+  
   DateTime now = rtc.now();
   logfile.print(now.month());
   logfile.print("/");
@@ -1201,113 +1230,14 @@ void Force::logdata() {
   logfile.print(now.second());
   logfile.print(",");
   
-  logfile.print((millis()-start_time)/1000.0000); //print seconds since start
-  logfile.print(",");
-
-  logfile.print(ver); // Print library version
-  logfile.print(",");
+  //logfile.print(reqLeft); // Print for requirement
+  //logfile.print(",");
   
-  logfile.print(library_version); // Print code or program version
-  logfile.print(",");
-
-  logfile.print(FRC); // Print device name
-  logfile.print(",");
+  //logfile.print(hold_timeLeft); 
+  //logfile.print(",");
   
-  if (PR==1) logfile.print("true"); // Print 
-  if (PR==0) logfile.print("false"); // Print 
-  logfile.print(",");
-  
-  logfile.print(reqLeft); // Print for requirement
-  logfile.print(",");
-  
-  logfile.print(hold_timeLeft); 
-  logfile.print(",");
-  
-  logfile.print(ratioLeft);
-  logfile.print(",");
-  
-  logfile.print(dispense_amount);
-  logfile.print(",");
-  
-  logfile.print(dispense_delay);
-  logfile.print(",");
-  
-  logfile.print(timeout_length);
-  logfile.print(",");
-  
-  logfile.print(trials_per_block);
-  logfile.print(",");
-  
-  logfile.print(max_force);
-  logfile.print(",");
- 
-  logfile.print(rewardLeft);
-  logfile.print(",");
-  
-  logfile.print(rewardRight);
-  logfile.print(",");
-  
-  logfile.print(pressesLeft);
-  logfile.print(",");
-  
-  logfile.print(gramsLeft);
-  logfile.print(",");
-  
-  logfile.print(gramsRight);
-  logfile.print(",");
-  
-  logfile.print(lickLeft);
-  logfile.print(",");
-  
-  logfile.print(lickRight);
-  logfile.print(",");
-
-  logfile.print(dispensing);
-  logfile.print(",");
-
-  logfile.flush();
-
-  if ( ! logfile ) {
-    error(2);
-  }
-}
-
-void Force::logdata_lite() {
-  DateTime now = rtc.now();
-  logfile.print(now.month());
-  logfile.print("/");
-  logfile.print(now.day());
-  logfile.print("/");
-  logfile.print(now.year());
-  logfile.print(" ");
-  logfile.print(now.hour());
-  logfile.print(":");
-  if (now.minute() < 10)
-    logfile.print('0');      // Trick to add leading zero for formatting
-  logfile.print(now.minute());
-  logfile.print(":");
-  if (now.second() < 10)
-    logfile.print('0');      // Trick to add leading zero for formatting
-  logfile.print(now.second());
-  logfile.print(",");
-
-  logfile.print(ver); // Print library version
-  logfile.print(",");
-  
-  logfile.print(library_version); // Print code or program version
-  logfile.print(",");
-
-  logfile.print(FRC); // Print device name
-  logfile.print(",");
-  
-  logfile.print(dispense_amount);
-  logfile.print(",");
-  
-  logfile.print(dispense_delay);
-  logfile.print(",");
-  
-  logfile.print(timeout_length);
-  logfile.print(",");
+  //logfile.print(ratioLeft);
+  //logfile.print(",");
   
   logfile.print(trials_per_block);
   logfile.print(",");
@@ -1315,36 +1245,151 @@ void Force::logdata_lite() {
   logfile.print(event);
   logfile.print(",");
 
-  logfile.print(trials_left);
+  logfile.print(pressesLeft);
   logfile.print(",");
   
-  logfile.print(trials_right);
+  logfile.print(pressesRight);
   logfile.print(",");
-
+  
   logfile.print(rewardLeft);
   logfile.print(",");
-
-  logfile.println(rewardRight);
-
-  logfile.flush();
-
-  if ( ! logfile ) {
-    error(2);
+  
+  logfile.print(rewardRight);
+  logfile.print(",");
+  
+  if (event == "ForceProfile_Left") {
+    if (log_lite) {
+      logfile.println(maxLeft);
+    }
+    
+    else {
+      int sizeLeft = force_profileLeft.size(); 
+      for (int i = 0; i < sizeLeft; i++) {
+        logfile.print(force_profileLeft[i]);
+        logfile.print(",");
+      }
+      logfile.println(0);
+    }
   }
+    
+  else if (event == "ForceProfile_Right") {
+    if (log_lite) {
+      logfile.println(maxRight);
+    }
+
+    else {
+      int sizeRight = force_profileRight.size();
+      for (int i = 0; i < sizeRight; i++) {
+        logfile.print(force_profileRight[i]);
+        logfile.print(",");
+      }
+      logfile.println(0);
+    }
+  }
+  
+  else {
+    logfile.println(sqrt(-1));
+  }
+  
+  logfile.flush();
 }
 
-void Force::loglite_Left() {
+//////////////////////////////////////////////////
+/////          Write data to file          ///////
+//////////////////////////////////////////////////
+
+void Force::logLicks() {
+  logfileLicks = SD.open(filenameLicks, FILE_WRITE);
+  
+  DateTime now = rtc.now();
+  logfileLicks.print(now.month());
+  logfileLicks.print("/");
+  logfileLicks.print(now.day());
+  logfileLicks.print("/");
+  logfileLicks.print(now.year());
+  logfileLicks.print(" ");
+  logfileLicks.print(now.hour());
+  logfileLicks.print(":");
+  if (now.minute() < 10)
+    logfileLicks.print('0');      // Trick to add leading zero for formatting
+  logfileLicks.print(now.minute());
+  logfileLicks.print(":");
+  if (now.second() < 10)
+    logfileLicks.print('0');      // Trick to add leading zero for formatting
+  logfileLicks.print(now.second());
+  logfileLicks.print(",");
+  
+  logfileLicks.print(lickLeft);
+  logfileLicks.print(",");
+  logfileLicks.println(lickRight);
+  
+  logfileLicks.flush();
+}
+
+//////////////////////////////////////////////////
+/////           Logs Center poke           ///////
+//////////////////////////////////////////////////
+
+void Force::logCenter() {
+  event = "CENTER";
+  logdata();
+}
+
+//////////////////////////////////////////////////
+/////           Logs Left press            ///////
+//////////////////////////////////////////////////
+
+void Force::logLeft() {
   event = "Left";
   trials_left ++;
-  logdata_lite();
+  logdata();
 }
 
-void Force::loglite_Right() {
+//////////////////////////////////////////////////
+/////           Logs Left press            ///////
+//////////////////////////////////////////////////
+
+void Force::logRight() {
   event = "Right";
   trials_right ++;
-  logdata_lite();
+  logdata();
 }
 
+//////////////////////////////////////////////////
+/////           Logs end of trial            /////
+//////////////////////////////////////////////////
+
+void Force:: logEnd() {
+  event = "ForceProfile_Left";
+  logdata();
+  force_profileLeft.clear();
+  
+  event = "ForceProfile_Right";
+  logdata();
+  force_profileRight.clear();
+  
+  event = "End";
+  logdata();
+  
+  
+}
+
+//////////////////////////////////////////////////
+//      Logs end of force profile collection    //
+//////////////////////////////////////////////////
+
+void Force::forceProfile() {
+  if (trial_available) {
+    if ((millis()-lastMeasurement) > 100) {
+      force_profileLeft.push_back(gramsLeft);
+      force_profileRight.push_back(gramsRight);
+    }
+  }
+  
+  else {
+    measurement_no = 0;
+  } 
+}
 /********************************************************
   If any errors are detected with the SD card print on the screen
 ********************************************************/
@@ -1386,6 +1431,38 @@ void Force::getFilename(char *filename) {
 }
 
 
+/********************************************************
+  This function creates a unique filename for each file that
+  starts with "FRC", then the date in MMDDYY,
+  then an incrementing number for each new file created on the same date
+********************************************************/
+void Force::getFilenameLicks(char *filenameLicks) {
+  DateTime now = rtc.now();
+
+  filenameLicks[3] = FRC / 100 + '0';
+  filenameLicks[4] = FRC / 10 + '0';
+  filenameLicks[5] = FRC % 10 + '0';
+  filenameLicks[7] = now.month() / 10 + '0';
+  filenameLicks[8] = now.month() % 10 + '0';
+  filenameLicks[9] = now.day() / 10 + '0';
+  filenameLicks[10] = now.day() % 10 + '0';
+  filenameLicks[11] = (now.year() - 2000) / 10 + '0';
+  filenameLicks[12] = (now.year() - 2000) % 10 + '0';
+  filenameLicks[22] = '.';
+  filenameLicks[23] = 'C';
+  filenameLicks[24] = 'S';
+  filenameLicks[25] = 'V';
+  for (uint8_t i = 0; i < 100; i++) {
+    filenameLicks[14] = '0' + i / 10;
+    filenameLicks[15] = '0' + i % 10;
+
+    if (! SD.exists(filenameLicks)) {
+      break;
+    }
+  }
+  return;
+}
+
 /////////////////////////////////////////////////////////////////////////
 ///////                 Task functions                           ////////
 /////////////////////////////////////////////////////////////////////////
@@ -1405,11 +1482,15 @@ void Force::readPoke() {
 void Force::Timeout(int timeout_length) {
   dispense_time = millis();
   while ((millis() - dispense_time) < (timeout_length * 1000)){
+    run();
+    SenseLeft();
+    SenseRight();
+    
     tft.setCursor(85, 44);
     tft.setTextColor(ST7735_WHITE);
     tft.print("Timeout:");
     tft.print((-(millis() - dispense_time - (timeout_length*1000))/ 1000),1);
-    run();
+
     tft.fillRect(84, 43, 80, 12, ST7735_BLACK);
     if ((gramsLeft > 1.5) or (gramsRight > 1.5)) { //reset timeout if either lever pushed
       Timeout(timeout_length); 
@@ -1441,6 +1522,9 @@ void Force::DispenseLeft() {
   Tone(4000,200);
   float successTime = millis();
   while ((millis() - successTime) < (dispense_delay * 1000)){
+    //Keep sensing the levers to not lose data for the FORCE profile
+    run();
+    
     tft.setCursor(85, 44);
     tft.setTextColor(ST7735_WHITE);
     tft.print("Delay:");
@@ -1478,6 +1562,9 @@ void Force::DispenseRight() {
   Tone(4000,200);
   float successTime = millis();
   while ((millis() - successTime) < (dispense_delay * 1000)){
+    //Keep sensing the levers to not lose data for the FORCE profile
+    run();
+    
     tft.setCursor(85, 44);
     tft.setTextColor(ST7735_WHITE);
     tft.print("Delay:");
@@ -1515,10 +1602,14 @@ void Force::SenseLeft() {
   if (gramsLeft < reqLeft){
     pressTimeLeft = millis();
     pressLengthLeft = 0;
+    maxLeft = 0;
   }
   
   if (gramsLeft > reqLeft) {
     pressLengthLeft = (millis() - pressTimeLeft);
+    if (gramsLeft > maxLeft) {
+      maxLeft = gramsLeft;
+    }
   }
     
   //Getting the data ready to send output through BNC
@@ -1527,7 +1618,7 @@ void Force::SenseLeft() {
   if (outputValueLeft > 4000) outputValueLeft = 4000;
   if (outputValueLeft < 1) outputValueLeft = 0;
 
-  analogWrite(BNC_OUT1, outputValueLeft);
+  //analogWrite(BNC_OUT1, outputValueLeft);
   
   scaleChangeLeft += abs(outputValueLeft - lastReadingLeft);
   lastReadingLeft = outputValueLeft;
@@ -1552,10 +1643,14 @@ void Force::SenseRight() {
   if (gramsRight < reqRight){
     pressTimeRight = millis();
     pressLengthRight = 0;
+    maxRight = 0;
   }
   
   if (gramsRight > reqRight) {
     pressLengthRight = (millis() - pressTimeRight);
+    if (gramsRight > maxRight) {
+      maxRight = gramsRight;
+    }
   }
     
   outputValueRight = map(gramsRight, 0, 200, 0, 4095);
@@ -1581,7 +1676,11 @@ void Force::SenseRight() {
 /////////////////////////////
 void Force::checkLicks() {
  lickLeft = digitalRead(LICK1) == HIGH;
- lickLeft = digitalRead(LICK2) == HIGH;
+ lickRight = digitalRead(LICK2) == HIGH;
+ 
+ if (lickLeft || lickRight) {
+   logLicks();
+ }
 }
 
 

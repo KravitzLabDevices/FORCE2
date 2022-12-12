@@ -17,12 +17,12 @@
 //                                        DON'T EDIT THESE LINES
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #include <FORCE2.h>                                      //Include FORCE library 
-String ver = "Force";                                  //unique identifier text
+String ver = "Bandit";                                  //unique identifier text
 Force force(ver);                                       //start FORCE object
 
 int prob_left = 100;                                     // Probability of pellet on the high-reward poke                                               
 int prob_right = 100;                                    // Probability of pellet on the low-reward poke
-int trialsToSwitch = 20;                                // # of trials before probabilities on the pokes switch
+int trialsToSwitch = 200;                                // # of trials before probabilities on the pokes switch
 int trial_counter = 0;                                 // Tracks how many pellets have been obtained in this set of probabilities
 int highp_counter = 0;                                  // Tracks how many pokes in a row in high probability poke
 int trialTimeout = 5;                                   //timeout duration after each poke, set to 0 to remove the timeout
@@ -31,8 +31,8 @@ bool press = false;
 
 void setup() {
   force.log_lite = true;
-  force.begin(force.log_lite);                                        //setup FORCE
   force.trial_window = 60000;
+  force.begin();                                        //setup FORCE
   force.ver = prob_left;
   force.FRC = prob_right;
   force.trials_per_block = trialsToSwitch;
@@ -63,7 +63,7 @@ void loop() {
     force.ver = prob_left;
     force.FRC = prob_right;
     //force.dispense_delay = highp_counter;
-    force.dispense_amount = trial_counter;
+    //force.dispense_amount = trial_counter;
   }
 
   /////////////////////////////////////////////////////////////////
@@ -73,10 +73,9 @@ void loop() {
   ////////////////////////////////////////////////////////////////
   force.readPoke();
   if (force.poke) {
-    force.run();
-    force.event = "CENTER";
-    force.logdata_lite();
     force.trial_start = millis();
+    force.run();
+    force.logCenter();
     force.Tone();
     force.trial_available = true;
   }
@@ -95,14 +94,13 @@ void loop() {
         highp_counter = 0;
       }
       //force.dispense_delay = highp_counter;
-      force.loglite_Left();
-      
+      force.logLeft();
       if (random(100) < prob_left) {
         force.event = "RewardLeft";
         force.DispenseLeft();
         trial_counter ++;
         force.dispense_amount = trial_counter;
-        force.logdata_lite();
+        force.logdata();
       }
       else {
         force.Tone(300,600);
@@ -122,14 +120,13 @@ void loop() {
         highp_counter = 0;
       }
       //force.dispense_delay = highp_counter;
-      force.loglite_Right();
-
+      force.logRight();
       if (random(100) < prob_right) {
         force.event = "RewardRight";
         force.DispenseRight();
         trial_counter ++;
         force.dispense_amount = trial_counter;
-        force.logdata_lite();
+        force.logdata();
         
       }
       else {
@@ -144,8 +141,9 @@ void loop() {
   ////     If there was no press during the time window     ////
   ///////////////////////////////////////////////////////////// 
   if (force.trial_available && press == false) {
-    force.Tone(300,600);
+    //force.Tone(300,600);
     force.trial_available = false;
+    force.logEnd();
   }
 
   //////////////////////////////////////////////////////////////
@@ -154,6 +152,7 @@ void loop() {
   if (press) {
     press = false;
     force.trial_available = false;
+    force.logEnd();
     force.Timeout(trialTimeout);
   }
 

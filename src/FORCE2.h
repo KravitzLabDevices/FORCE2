@@ -13,6 +13,9 @@
 #ifndef FORCE_H
 #define FORCE_H
 
+#include <Vector.h>
+
+
 #include <Wire.h>
 #include <SPI.h>
 #include <Adafruit_GFX.h>
@@ -51,10 +54,10 @@ class Force {
   public:
     Force(String ver);
     String ver = "undef";
-    String library_version = "undef";
+    String library_version = "0.0.2;
             
     // --- Basic functions --- //
-    void begin(bool log_lite = true);
+    void begin();
     void run();
     void check_buttons();
     void readPoke();
@@ -104,18 +107,30 @@ class Force {
     // --- SD File --- //
     SdFat SD;
     File logfile;               // Create file object
+    File logfileLicks;
     char filename[21];          // Array for file name data logged to named in setup
+    char filenameLicks[27];
     const int chipSelect = 10;
-    void CreateDataFile();
-    void writeHeader(bool log_lite = true);
+    void CreateDataFiles();
+    void writeHeader();
+    void writeHeaderLicks();
     void error(uint8_t errno);
     void getFilename(char *filename);
+    void getFilenameLicks(char *filenameLicks);
     void logdata();
     void logdata_lite();
-    void loglite_Left();
-    void loglite_Right();
+    void logCenter();
+    void logLeft();
+    void logRight();
+    void logEnd();
+    void logLicks();
+    void forceProfile();
     unsigned long unixtime = 0;
     
+    int lastMeasurement = 0;
+    int measurement_no = 0;
+    Vector<int> force_profileLeft;
+    Vector<int> force_profileRight;
     bool log_lite = true;
     bool dispensing = true;
 
@@ -173,7 +188,8 @@ class Force {
             
     unsigned long pressStart = 0;    
     int trials_per_block = 10;
-    int max_force = 20; 
+    int maxLeft = 0;
+    int maxRight = 0;
     unsigned long start_time = 0;
     unsigned long lickTime = 0;
     unsigned long dispenseTime = 0;
